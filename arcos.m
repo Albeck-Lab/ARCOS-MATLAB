@@ -93,9 +93,6 @@ for time = 1:size(XCoord,2)
 end
 end %wrapper function end
 
-
-
-
 %%Get minpts and epsilon
 function [minpts, eps] = arcos_prep_dbscan(XCoord, YCoord)
 %%Calculate minpts
@@ -103,18 +100,15 @@ function [minpts, eps] = arcos_prep_dbscan(XCoord, YCoord)
 minpts = ndims(XCoord)*2;
 %%Calculate eps
 [~,d] = knnsearch([XCoord,YCoord], [XCoord, YCoord],'K', minpts+1); %k-nearest neighbors search
-d = sort(d);
-d = d(:,2:end);
-max_d = max(d,[],2); %Biased toward greater distances as opposed to average of k-nearest
+d = max(d,[],2); %Biased toward greater distances as opposed to average of k-nearest
+max_d = sort(d);
 scaled = max_d * length(max_d)/max(max_d); %Scale the data
 smoothed = smoothdata(scaled,'gaussian'); %Smooth it
 slopes = gradient(smoothed); %Take first derivative
 [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
-%eps = avg_d(ix);
+%eps = avg_d(ix); %average or max? What's better?
 eps = max_d(ix);
 end %dbscan function end
-
-
 
 %%ARCOS Core
 % 

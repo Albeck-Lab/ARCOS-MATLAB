@@ -7,23 +7,25 @@
 %
 % 
 %% Inputs
-% * *Input 1* - |Data type| - description of input
-% * *Input 2* - |Data type| - description of input
+% * *XCoord* - |Data type| - description of input
+% * *YCoord* - |Data type| - description of input
+% * *cdata* - |Data type| - description of input
+% * t* - |Data type| - description of input
 % * _varargin_ - |option value pairs| - accepts optional inputs as option-value pairs.
 %%% Optional Inputs
-% * *Optional 1* - |Data type| , |Data type| - Description. *Default: default value*
-% * *Optional 2* - |Data type| , |Data type| - Description. *Default: default value*
+% * *save* - |boolean| - Description. *Default: default value*
+% * *gif* - |boolean| - Description. *Default: default value*
 %% Outputs
 % *output* - |Data type| - description of output
 %
 %% Examples
 % *Using default parameters*
 %
-%   output = function(input);
+%   arcos_plot(XCoord,YCoord,cdata,t);
 %
 % *Using optional parameters*
 %
-%   output = function(input, 'optional 1', value);
+%   arcos_plot(XCoord,YCoord,cdata,t,'save',true);
 %
 %% See Also
 % * Item 1
