@@ -1,13 +1,67 @@
 %% ARCOS
-% Wrapper for arocs_core
-% Input "bin" should be a logical array with indices corresponding to cells
-% in XCoord and YCoord. 1 if cell state is "active", 0 if "inactive"
-% Data for XCoord, YCoord and bin should be formatted such that each row is a
-% cell and each column is a timepoint
+% A limited feature set port of the R package "ARCOS"
+%
+% "Automated Recognition of Collective Signalling (ARCOS) is an R package
+% to identify collective spatial events in time series data."
+%
+% <https://github.com/dmattek/ARCOS Original ARCOS GitHub>
+%
+% <<https://github.com/dmattek/ARCOS/raw/main/man/figures/README-ex1plotTS-1.png>>
+%
+% <<https://github.com/dmattek/ARCOS/raw/main/man/figures/README-ex1plotColl-1.png>> 
+% 
+%% Inputs
+% * *XCoord* - |2D array| - x coordinates of cells. Each row is a cell,
+% each column is a timepoint
+% * *YCoord* - |2D array| - y coordinates of cells. Each row is a cell,
+% each column is a timepoint
+% * *bin* - |2D array| - binarized data indicating 'active' (1) and
+% 'inactive' (0) cells
+% * _varargin_ - |option value pairs| - accepts optional inputs as option-value pairs.
+%%% Optional Inputs
+% * *eps* - |single| , |double| - Search radius used to find points in the
+% dbscan clustering algorithm. Must be greater than zero. *Default: Calculated for every timepoint*
+% * *minpts* - |integer| - Minimum number of neighbors required for a
+% core point, specified as a positive integer. Must be a positive integer greater than zero. 
+% *Default: ndims(XCoord)x2*
+% * *time* - |1x2 array of ints| - Desired start and end time points. First
+% element is start time, second element is end time. *Default: Earliest
+% time to latest time index* 
+% * *genplot* - |boolean| - Specify whether to plot the results. *Default:
+% false*
+%% Outputs
+% *cdata* - outputs a cell array with columns representing timepoints. Each
+% cell contains a cell array of structs representing spread events for that
+% timepoint.
+%
+% Each struct contains the following fields
+%
+% * *pts* - the xy coordinates of cells in the spreading event
+% * *hull* - indices of points that make up the spread's convex hull
+% * *area* - the computer area of the convex hull
+%
+%% Examples
+% *Using default parameters*
+%
+%   cdata = arcos(XCoord,YCoord,bin);
+%
+% *Using optional parameters, specifying epsilon of 55, minpts 5*
+%
+%   cdata = arcos(XCoord,YCoord,bin,'eps',55,'minpts',5);
+%% See Also
+% * <https://www.mathworks.com/help/stats/dbscan.html#mw_a35e3831-bd7a-437f-b128-889a3a444aa2
+% Density-based spatial clustering of applications with noise (DBSCAN)>
+% * <https://www.mathworks.com/help/matlab/ref/convhull.html Convex Hull>
+%% To Do
+% * Test for false-positive rate
+% * Test for divergence events
+% * Test for convergence events
+
+%%
 function cdata = arcos(XCoord, YCoord, bin, varargin)
 p.eps = [];
 p.minpts = [];
-%% Prepare additional inputs
+%%Prepare additional inputs
 nin = length(varargin);     %Check for even number of add'l inputs
 if rem(nin,2) ~= 0
     warning('Additional inputs must be provided as option, value pairs');  
@@ -16,7 +70,7 @@ for s = 1:2:nin
     p.(lower(varargin{s})) = varargin{s+1};   
 end
 
-%% Perform checks
+%%Perform checks
 assert(~isempty(XCoord), 'No x coordinate data detected');
 assert(~isempty(YCoord), 'No y coordinate data detected');
 assert(numel(XCoord) == numel(YCoord), 'XCoords and YCoords not equal')
@@ -25,7 +79,7 @@ if isempty(bin)
 end
 
 
-%% Loop through time
+%%Loop through time
 cdata = cell(1,size(XCoord,2)); %Preallocate cdata for speed
 for time = 1:size(XCoord,2)
     if isempty(p.eps) || isempty(p.minpts)
@@ -42,12 +96,12 @@ end %wrapper function end
 
 
 
-%% Get minpts and epsilon
+%%Get minpts and epsilon
 function [minpts, eps] = arcos_prep_dbscan(XCoord, YCoord)
-%% Calculate minpts
+%%Calculate minpts
 % Default is 4 for 2D data according to Ester et al., 1996)
 minpts = ndims(XCoord)*2;
-%% Calculate eps
+%%Calculate eps
 [~,d] = knnsearch([XCoord,YCoord], [XCoord, YCoord],'K', minpts+1); %k-nearest neighbors search
 d = sort(d);
 d = d(:,2:end);
@@ -62,7 +116,7 @@ end %dbscan function end
 
 
 
-%% ARCOS Core
+%%ARCOS Core
 % 
 function events = arcos_core(activeXY, eps, minpts)
 assert(eps>0, 'eps must be greater than 0') %These checks might need to happen earlier
