@@ -1,37 +1,33 @@
 %% ARCOS Binarize
 % Binarizes data using channel intensity values
-%
-% <https://google.com Web Link>
-%
-% <<Link to image>>
-%
-% 
 %% Inputs
-% * *Input 1* - |Data type| - description of input
-% * *Input 2* - |Data type| - description of input
+% * *ch* - |2D Matrix| - channel intensity data where rows are cells and
+% columns are timepoints
 % * _varargin_ - |option value pairs| - accepts optional inputs as option-value pairs.
 %%% Optional Inputs
-% * *Optional 1* - |Data type| , |Data type| - Description. *Default: default value*
-% * *Optional 2* - |Data type| , |Data type| - Description. *Default: default value*
+% * *percentile* - |int| - 1:99. The percentile of signal intensities above which will be 
+% 'active' and below which will be ' inactive'. *Default: 75*
+% 
 %% Outputs
-% *output* - |Data type| - description of output
-%
+% * *bin* - |Matrix| - logical array where 1 is active and 0 is inactive.
+% * *threshold* - |double| - The calculated threshold value used to determine 'active' or 'inactive' cells.
+% 
 %% Examples
 % *Using default parameters*
+%   bin = arcos_binarize(ch);
 %
-%   output = function(input);
+%   [bin,thr] = arcos_binarize(ch);
+%
+%   [~,thr] = arcos_binarize(ch);
 %
 % *Using optional parameters*
 %
-%   output = function(input, 'optional 1', value);
+%   bin = arcos_binarize(ch,'percentile',80);
 %
-%% See Also
-% * Item 1
-% * Item 2
-%% To Do
-% * Item 1
-% * Item 2
-% * Item 3
+%   [bin,thr] = arcos_binarize(ch,'percentile',25);
+%
+%   [~,thr] = arcos_binarize(ch,'percentile',80);
+%
 function [bin,threshold] = arcos_binarize(ch,varargin)
 p.percentile = 75;
 nin = length(varargin);     %Check for even number of add'l inputs

@@ -1,0 +1,12 @@
+Work back to ARCOS R package - see how they deal with noisey data. 
+Tracking spreads
+
+Validate against R ARCOS package - run the same inputs in both and see the results.
+Use generated and real data sets
+
+Work on improvements for convex hull after data validation steps.
+Work on improvements for binarized data. grey thresh?
+
+May need to take average vs max of knn distances
+
+Implement tracking. 

@@ -7,33 +7,25 @@
 %
 % 
 %% Inputs
-% * *XCoord* - |Data type| - description of input
-% * *YCoord* - |Data type| - description of input
-% * *cdata* - |Data type| - description of input
-% * t* - |Data type| - description of input
+% * *XCoord* - |2D Matrix| - X coordinates. Rows are cells, columns are
+% timepoints
+% * *YCoord* - |2D Matrix| - Y coordinates. Rows are cells, columns are
+% timepoints
+% * *cdata* - |Cell array| - The output of the arcos script
+% * t* - |2D array| - Beginning and ending timepoints. Ex [1,10]
 % * _varargin_ - |option value pairs| - accepts optional inputs as option-value pairs.
 %%% Optional Inputs
-% * *save* - |boolean| - Description. *Default: default value*
-% * *gif* - |boolean| - Description. *Default: default value*
-%% Outputs
-% *output* - |Data type| - description of output
-%
+% * *save* - |boolean| - Set to true to save individual figures to file. *Default: false*
+% * *gif* - |boolean| - Set to true to save the timeseries as an animated gif. *Default: false*
 %% Examples
 % *Using default parameters*
 %
-%   arcos_plot(XCoord,YCoord,cdata,t);
+%   arcos_plot(XCoord,YCoord,cdata,[1,5]);
 %
 % *Using optional parameters*
 %
-%   arcos_plot(XCoord,YCoord,cdata,t,'save',true);
+%   arcos_plot(XCoord,YCoord,cdata,[1 10],'save',true);
 %
-%% See Also
-% * Item 1
-% * Item 2
-%% To Do
-% * Item 1
-% * Item 2
-% * Item 3
 function arcos_plot(XCoord, YCoord, cdata,t,varargin)
 p.save = false;
 p.gif = false;
