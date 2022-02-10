@@ -90,6 +90,7 @@ for time = 1:size(XCoord,2)
     end
     activeXY = [XCoord(bin(:,time)==1,time), YCoord(bin(:,time)==1,time)];
     cdata{1,time} = arcos_core(activeXY, eps, minpts);
+    cdata{2,time} = eps;
 end
 end %wrapper function end
 
@@ -129,14 +130,18 @@ for cl = 1:max(clusters)
     pts = activeXY(clusters==cl,:);
     if size(pts,1)>2
         [hull, area] = convhull(pts);
-        cluster.pts = pts;
-        cluster.id = clusters;
-        cluster.eps = eps;
-        cluster.hull = hull;
-        cluster.area = area;
-        events{cl, 1} = cluster;
+        events{cl,1} = pts; %Column 1 is points in that cluster
+        events{cl,2} = cl; %cluster identity
+        events{cl,3} = hull;
+        events{cl,4} = area;
     else
         continue
-    end
+    end 
 end
+end %arcos_core end
+
+function tdata = arcos_track(cdata)
+    cCurr = cdata{1, end};
+    cPrev = cdata{1, end-1};
+    %idCurr = cCurr{
 end
