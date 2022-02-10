@@ -108,7 +108,7 @@ slopes = gradient(smoothed); %Take first derivative
 [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
 %eps = avg_d(ix); %average or max? What's better?
 eps = max_d(ix);
-end %dbscan function end
+end %prep dbscan function end
 
 %%ARCOS Core
 % 
@@ -125,11 +125,13 @@ if minpts <=2
 end
 clusters = dbscan(activeXY, eps, minpts);
 events = cell(max(clusters),1);
-for cl = 1:max(clusters) %Treat clusters differently
+for cl = 1:max(clusters)
     pts = activeXY(clusters==cl,:);
     if size(pts,1)>2
         [hull, area] = convhull(pts);
         cluster.pts = pts;
+        cluster.id = clusters;
+        cluster.eps = eps;
         cluster.hull = hull;
         cluster.area = area;
         events{cl, 1} = cluster;
