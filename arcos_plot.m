@@ -29,6 +29,7 @@
 function arcos_plot(XCoord, YCoord, cdata,t,varargin)
 p.save = false;
 p.gif = false;
+p.tracked = true;
 nin = length(varargin);     %Check for even number of add'l inputs
 if rem(nin,2) ~= 0
     warning('Additional inputs must be provided as option, value pairs');  
@@ -40,7 +41,7 @@ end
 fh = figure();
 fh.WindowState = 'maximized';
 for time = t(1):t(end)
-    image = plotter(XCoord, YCoord, cdata, time);
+    image = plotter(XCoord, YCoord, cdata, time,p.tracked);
     if p.save==true
         saveas(image,append(int2str(time), '.png'))
     end
@@ -48,11 +49,15 @@ for time = t(1):t(end)
         gif(image,time, t(1))
     end
 end
-
 end %EOF
 %% Plot
-function image = plotter(XCoord, YCoord,cdata, time)
+function image = plotter(XCoord, YCoord,cdata, time,tracked)
     assert(~isempty(cdata{time}), sprintf('No data for given time %d', time));
+    if tracked == true
+        rw = 3;
+    else
+        rw = 1;
+    end
     clf
     
     plot(XCoord(:,time),YCoord(:,time),'o', 'MarkerSize', 4, 'LineStyle', 'none' );
@@ -60,10 +65,10 @@ function image = plotter(XCoord, YCoord,cdata, time)
     axis square;
     xlim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
     ylim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
-    for event = 1:size(cdata{time},1)
-        if ~isempty(cdata{time}{event})
-            xy = cdata{time}{event}.pts;
-            hull = cdata{time}{event}.hull;
+    for event = 1:size(cdata{rw,time},1)
+        if ~isempty(cdata{rw,time}{event,1})
+            xy = cell2mat(cdata{rw,time}{event,1});
+            hull = cell2mat(cdata{rw,time}{event,3});
             plot(xy(:,1),xy(:,2), '.r','MarkerSize', 4, 'LineStyle', 'none')
             plot(xy(hull,1),xy(hull,2), 'r');
             hold on

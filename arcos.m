@@ -63,6 +63,7 @@
 function cdata = arcos(XCoord, YCoord, bin, varargin)
     p.eps = [];
     p.minpts = [];
+    p.sm = 1; %Tracking speed multiplier. Searches a wider radius for neighbor clusters. *Set at your own risk - may affect accuracy of tracking algorithm*
     %%Prepare additional inputs
     nin = length(varargin);     %Check for even number of add'l inputs
     if rem(nin,2) ~= 0
@@ -93,7 +94,7 @@ function cdata = arcos(XCoord, YCoord, bin, varargin)
         activeXY = [XCoord(bin(:,time)==1,time), YCoord(bin(:,time)==1,time)];
         cdata{1,time} = arcos_core(activeXY, eps, minpts);
         cdata{2,time} = eps;
-        cdata{3,time} = arcos_track(cdata,time);
+        cdata{3,time} = arcos_track(cdata,time, p.sm);
     end
 end %wrapper function end
 
@@ -110,7 +111,6 @@ function [minpts, eps] = arcos_prep_dbscan(XCoord, YCoord)
     smoothed = smoothdata(scaled,'gaussian'); %Smooth it
     slopes = gradient(smoothed); %Take first derivative
     [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
-    %eps = avg_d(ix); %average or max? What's better?
     eps = max_d(ix);
 end %prep dbscan function end
 
@@ -119,7 +119,6 @@ end %prep dbscan function end
 function events = arcos_core(activeXY, eps, minpts)
     assert(eps>0, 'eps must be greater than 0') %These checks might need to happen earlier
     assert(minpts>1, 'minpts must be greater than 1')
-    %assert(~isempty(activeXY), 'activeXY must contain at least one point')
     if (isempty(activeXY))
         events = [];
         return
@@ -128,7 +127,7 @@ function events = arcos_core(activeXY, eps, minpts)
         warning('minpts less than 3 may yield inaccurate results'); 
     end
     clusters = dbscan(activeXY, eps, minpts);
-    events = cell(max(clusters),1); %Preallocate cell array for speed
+    events = cell(max(clusters),4); %Preallocate cell array for speed
     for cl = 1:max(clusters)
         pts = activeXY(clusters==cl,:);
         if size(pts,1)>2
@@ -153,19 +152,39 @@ function pos = getPos(data)
             lpos(end,3) = data{cl,2};
         end
     end
+    lpos(1,:)=[]; %remove the empty first line
     pos = lpos;
 end
-function tdata = arcos_track(cdata,t)
+function tdata = arcos_track(cdata,t,sm)
     if (t-1==0) %If t-1 is out of bounds
-        tdata = []; %Change this later to just output cdata for the first t
+        tdata = cdata{1,t}; %Change this later to just output cdata for the first t
     else
         tCurr = cdata{1, t}; %All clusters at current timepoint
         tPrev = cdata{1, t-1}; %All clusters at previous timepoint
         eps = cdata{2,t};
-        
-        posCurr = getPos(tCurr);
-        posPrev = getPos(tPrev);
-        [idx,d] = knnsearch(posCurr,posPrev,'K', 1);
-        tdata = []; %Returning an empty array until I can get this working.
+        posCurr = getPos(tCurr); %Get all xy for clusters at time current
+        posPrev = getPos(tPrev); %Same for time previous
+        [idx,d] = knnsearch(posPrev,posCurr,'K', 1); %the closest neighbor to point in posCurr is posPrev(idx) with distance d
+        prevClustID = posPrev(idx,3); %Get all cn for previous xy
+        for pt = 1:length(d)
+            if d(pt) <= eps*sm %If the point is within epsilon * speed multiplier
+                posCurr(pt,4) = prevClustID(pt); %reassign its cn to cn previous
+            else
+                posCurr(pt,4) = posCurr(pt,3); %keep its current assignment
+            end
+        end
+        clusters = cell(max(posCurr(:,4)),4); %generate empty cell array
+        for cl = 1:size(clusters,1)
+            cls = posCurr(:,4)==cl;
+            clustXY = posCurr(cls==1,1:2);
+            clusters{cl,1} = num2cell(clustXY);
+            clusters{cl,2} = cl;
+            if size(clustXY,1)>2
+                [hull, area] = convhull(clustXY);
+                clusters{cl,3} = num2cell(hull);
+                clusters{cl,4} = area;
+            end
+        end
+        tdata = clusters; %Returning an empty array until I can get this working.
     end
 end
