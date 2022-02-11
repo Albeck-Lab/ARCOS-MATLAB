@@ -52,6 +52,8 @@
 % * <https://www.mathworks.com/help/stats/dbscan.html#mw_a35e3831-bd7a-437f-b128-889a3a444aa2
 % Density-based spatial clustering of applications with noise (DBSCAN)>
 % * <https://www.mathworks.com/help/matlab/ref/convhull.html Convex Hull>
+% * <https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf A Density-Based
+% Algorithm for Discovering Clusters>
 %% To Do
 % * Test for false-positive rate
 % * Test for divergence events
@@ -59,89 +61,111 @@
 
 %%
 function cdata = arcos(XCoord, YCoord, bin, varargin)
-p.eps = [];
-p.minpts = [];
-%%Prepare additional inputs
-nin = length(varargin);     %Check for even number of add'l inputs
-if rem(nin,2) ~= 0
-    warning('Additional inputs must be provided as option, value pairs');  
-end%Splits pairs to a structure
-for s = 1:2:nin
-    p.(lower(varargin{s})) = varargin{s+1};   
-end
-
-%%Perform checks
-assert(~isempty(XCoord), 'No x coordinate data detected');
-assert(~isempty(YCoord), 'No y coordinate data detected');
-assert(numel(XCoord) == numel(YCoord), 'XCoords and YCoords not equal')
-if isempty(bin)
-   warning('No binarized data supplied');
-end
-
-
-%%Loop through time
-cdata = cell(1,size(XCoord,2)); %Preallocate cdata for speed
-for time = 1:size(XCoord,2)
-    if isempty(p.eps) || isempty(p.minpts)
-        [minpts, eps] = arcos_prep_dbscan(XCoord(:,time),YCoord(:,time));
-    else
-        minpts = p.minpts;
-        eps = p.eps;
+    p.eps = [];
+    p.minpts = [];
+    %%Prepare additional inputs
+    nin = length(varargin);     %Check for even number of add'l inputs
+    if rem(nin,2) ~= 0
+        warning('Additional inputs must be provided as option, value pairs');  
+    end%Splits pairs to a structure
+    for s = 1:2:nin
+        p.(lower(varargin{s})) = varargin{s+1};   
     end
-    activeXY = [XCoord(bin(:,time)==1,time), YCoord(bin(:,time)==1,time)];
-    cdata{1,time} = arcos_core(activeXY, eps, minpts);
-    cdata{2,time} = eps;
-end
+
+    %%Perform checks
+    assert(~isempty(XCoord), 'No x coordinate data detected');
+    assert(~isempty(YCoord), 'No y coordinate data detected');
+    assert(numel(XCoord) == numel(YCoord), 'XCoords and YCoords not equal')
+    if isempty(bin)
+       warning('No binarized data supplied');
+    end
+
+
+    %%Loop through time
+    cdata = cell(1,size(XCoord,2)); %Preallocate cdata for speed
+    for time = 1:size(XCoord,2)
+        if isempty(p.eps) || isempty(p.minpts)
+            [minpts, eps] = arcos_prep_dbscan(XCoord(:,time),YCoord(:,time));
+        else
+            minpts = p.minpts;
+            eps = p.eps;
+        end
+        activeXY = [XCoord(bin(:,time)==1,time), YCoord(bin(:,time)==1,time)];
+        cdata{1,time} = arcos_core(activeXY, eps, minpts);
+        cdata{2,time} = eps;
+        cdata{3,time} = arcos_track(cdata,time);
+    end
 end %wrapper function end
 
 %%Get minpts and epsilon
 function [minpts, eps] = arcos_prep_dbscan(XCoord, YCoord)
-%%Calculate minpts
-% Default is 4 for 2D data according to Ester et al., 1996)
-minpts = ndims(XCoord)*2;
-%%Calculate eps
-[~,d] = knnsearch([XCoord,YCoord], [XCoord, YCoord],'K', minpts+1); %k-nearest neighbors search
-d = max(d,[],2); %Biased toward greater distances as opposed to average of k-nearest
-max_d = sort(d);
-scaled = max_d * length(max_d)/max(max_d); %Scale the data
-smoothed = smoothdata(scaled,'gaussian'); %Smooth it
-slopes = gradient(smoothed); %Take first derivative
-[~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
-%eps = avg_d(ix); %average or max? What's better?
-eps = max_d(ix);
+    %%Calculate minpts
+    % Default is 4 for 2D data according to Ester et al., 1996)
+    minpts = ndims(XCoord)*2;
+    %%Calculate eps
+    [~,d] = knnsearch([XCoord,YCoord], [XCoord, YCoord],'K', minpts+1); %k-nearest neighbors search
+    d = max(d,[],2); %Biased toward greater distances as opposed to average of k-nearest
+    max_d = sort(d);
+    scaled = max_d * length(max_d)/max(max_d); %Scale the data
+    smoothed = smoothdata(scaled,'gaussian'); %Smooth it
+    slopes = gradient(smoothed); %Take first derivative
+    [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
+    %eps = avg_d(ix); %average or max? What's better?
+    eps = max_d(ix);
 end %prep dbscan function end
 
 %%ARCOS Core
 % 
 function events = arcos_core(activeXY, eps, minpts)
-assert(eps>0, 'eps must be greater than 0') %These checks might need to happen earlier
-assert(minpts>1, 'minpts must be greater than 1')
-%assert(~isempty(activeXY), 'activeXY must contain at least one point')
-if (isempty(activeXY))
-    events = [];
-    return
-end
-if minpts <=2 
-    warning('minpts less than 3 may yield inaccurate results'); 
-end
-clusters = dbscan(activeXY, eps, minpts);
-events = cell(max(clusters),1);
-for cl = 1:max(clusters)
-    pts = activeXY(clusters==cl,:);
-    if size(pts,1)>2
-        [hull, area] = convhull(pts);
-        events{cl,1} = pts; %Column 1 is points in that cluster
-        events{cl,2} = cl; %cluster identity
-        events{cl,3} = hull;
-        events{cl,4} = area;
-    else
-        continue
-    end 
-end
+    assert(eps>0, 'eps must be greater than 0') %These checks might need to happen earlier
+    assert(minpts>1, 'minpts must be greater than 1')
+    %assert(~isempty(activeXY), 'activeXY must contain at least one point')
+    if (isempty(activeXY))
+        events = [];
+        return
+    end
+    if minpts <=2 
+        warning('minpts less than 3 may yield inaccurate results'); 
+    end
+    clusters = dbscan(activeXY, eps, minpts);
+    events = cell(max(clusters),1); %Preallocate cell array for speed
+    for cl = 1:max(clusters)
+        pts = activeXY(clusters==cl,:);
+        if size(pts,1)>2
+            [hull, area] = convhull(pts);
+            events{cl,1} = num2cell(pts); % points in that cluster
+            events{cl,2} = cl; %cluster identity
+            events{cl,3} = num2cell(hull);
+            events{cl,4} = area;
+        else
+            continue
+        end 
+    end
 end %arcos_core end
 
-function tdata = arcos_track(cdata)
-    cCurr = cdata{1, end};
-    cPrev = cdata{1, end-1};
-    %idCurr = cCurr{
+function pos = getPos(data)
+    lpos = [0,0,0];
+    for cl = 1:size(data,1) %Loop through clusters and get their coords
+        clCurr = cell2mat(data{cl,1});
+        for p = 1:size(clCurr,1) %Append all the cluster points into one matrix
+            lpos(end+1,1) = clCurr(p,1);
+            lpos(end,2) = clCurr(p,2);
+            lpos(end,3) = data{cl,2};
+        end
+    end
+    pos = lpos;
+end
+function tdata = arcos_track(cdata,t)
+    if (t-1==0) %If t-1 is out of bounds
+        tdata = []; %Change this later to just output cdata for the first t
+    else
+        tCurr = cdata{1, t}; %All clusters at current timepoint
+        tPrev = cdata{1, t-1}; %All clusters at previous timepoint
+        eps = cdata{2,t};
+        
+        posCurr = getPos(tCurr);
+        posPrev = getPos(tPrev);
+        [idx,d] = knnsearch(posCurr,posPrev,'K', 1);
+        tdata = []; %Returning an empty array until I can get this working.
+    end
 end
