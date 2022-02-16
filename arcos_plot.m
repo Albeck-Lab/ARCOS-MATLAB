@@ -63,8 +63,10 @@ function image = plotter(XCoord, YCoord,cdata, time,tracked)
     plot(XCoord(:,time),YCoord(:,time),'o', 'MarkerSize', 4, 'LineStyle', 'none' );
     hold on;
     axis square;
-    xlim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
-    ylim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
+    %xlim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
+    %ylim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
+    xlim([0 inf])
+    ylim([0 inf])
     for event = 1:size(cdata{rw,time},1)
         if ~isempty(cdata{rw,time}{event,1})
             xy = cell2mat(cdata{rw,time}{event,1});

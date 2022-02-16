@@ -142,6 +142,7 @@ function events = arcos_core(activeXY, eps, minpts)
     end
 end %arcos_core end
 
+%%getPos - a utility for arcos_track for returning xy coords
 function pos = getPos(data)
     lpos = [0,0,0];
     for cl = 1:size(data,1) %Loop through clusters and get their coords
@@ -157,26 +158,23 @@ function pos = getPos(data)
 end
 function tdata = arcos_track(cdata,t,sm)
     if (t-1==0) %If t-1 is out of bounds
-        tdata = cdata{1,t}; %Change this later to just output cdata for the first t
+        tdata = cdata{1,t};
     else
-        tCurr = cdata{1, t}; %All clusters at current timepoint
-        tPrev = cdata{1, t-1}; %All clusters at previous timepoint
-        eps = cdata{2,t};
-        posCurr = getPos(tCurr); %Get all xy for clusters at time current
-        posPrev = getPos(tPrev); %Same for time previous
-        [idx,d] = knnsearch(posPrev,posCurr,'K', 1); %the closest neighbor to point in posCurr is posPrev(idx) with distance d
-        prevClustID = posPrev(idx,3); %Get all cn for previous xy
-        for pt = 1:length(d)
-            if d(pt) <= eps*sm %If the point is within epsilon * speed multiplier
-                posCurr(pt,4) = prevClustID(pt); %reassign its cn to cn previous
-            else
-                posCurr(pt,4) = posCurr(pt,3); %keep its current assignment
-            end
+        eps = cdata{2,t}; %epsilon for current timepoint
+        posCurr = getPos(cdata{1, t}); %Get all xy for clusters at time current
+        posPrev = getPos(cdata{1, t-1}); %Get xy for previous clusters
+        [idx,d] = knnsearch(posPrev(:,1:2),posCurr(:,1:2),'K', 1); %the closest neighbor to point in posCurr is posPrev(idx) with distance d
+        for pt = 1:size(posCurr,1)
+           if d(pt) <= eps*sm %If the point is within epsilon distance, set cid to prev cid
+               posCurr(pt,4) = posPrev(idx(pt),3);
+           else
+               posCurr(pt,4) = 0;
+           end
         end
         clusters = cell(max(posCurr(:,4)),4); %generate empty cell array
-        for cl = 1:size(clusters,1)
-            cls = posCurr(:,4)==cl;
-            clustXY = posCurr(cls==1,1:2);
+        for cl = 1:max(posCurr(:,4)) %format and output data
+            cls = posCurr(:,4)==cl; %logical map for rows of current cl
+            clustXY = posCurr(cls==1,1:2); %xys for those rows
             clusters{cl,1} = num2cell(clustXY);
             clusters{cl,2} = cl;
             if size(clustXY,1)>2
