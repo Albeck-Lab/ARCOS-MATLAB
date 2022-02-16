@@ -162,7 +162,7 @@ function tdata = arcos_track(cdata,t,sm)
     else
         eps = cdata{2,t}; %epsilon for current timepoint
         posCurr = getPos(cdata{1, t}); %Get all xy for clusters at time current
-        posPrev = getPos(cdata{1, t-1}); %Get xy for previous clusters
+        posPrev = getPos(cdata{3, t-1}); %Get xy for previous clusters
         [idx,d] = knnsearch(posPrev(:,1:2),posCurr(:,1:2),'K', 1); %the closest neighbor to point in posCurr is posPrev(idx) with distance d
         for pt = 1:size(posCurr,1)
            if d(pt) <= eps*sm %If the point is within epsilon distance, set cid to prev cid
