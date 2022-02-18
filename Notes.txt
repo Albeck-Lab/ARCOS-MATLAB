@@ -36,3 +36,19 @@ knnsearch output
             locDT[get(cols$frame) == iFrame &
                     get(cols$clid) == iCl,
                   (cols$clid) := rep(locVclPrevNNuni, nrow(locDTposCurr))]
+
+
+Tasks from 2/18/22 onward
+1. Create script to generate synthetic spreads
+2. 3D dbscan
+3. Format outputs per Michael's requirements
+
+Synthetic spreads - 
+select some random points in t1 and make them active
+In t2, Get k nearest neighbors within epsilon of points and makee them active. 
+
+
+Take in points only or binarized data?
+Points only = synthetic spreads only
+Points + bin = synthetic spreads + background noise
+

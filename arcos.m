@@ -163,26 +163,31 @@ function tdata = arcos_track(cdata,t,sm)
         eps = cdata{2,t}; %epsilon for current timepoint
         posCurr = getPos(cdata{1, t}); %Get all xy for clusters at time current
         posPrev = getPos(cdata{3, t-1}); %Get xy for previous clusters
-        [idx,d] = knnsearch(posPrev(:,1:2),posCurr(:,1:2),'K', 1); %the closest neighbor to point in posCurr is posPrev(idx) with distance d
-        for pt = 1:size(posCurr,1)
-           if d(pt) <= eps*sm %If the point is within epsilon distance, set cid to prev cid
-               posCurr(pt,4) = posPrev(idx(pt),3);
-           else
-               posCurr(pt,4) = 0;
-           end
-        end
-        clusters = cell(max(posCurr(:,4)),4); %generate empty cell array
-        for cl = 1:max(posCurr(:,4)) %format and output data
-            cls = posCurr(:,4)==cl; %logical map for rows of current cl
-            clustXY = posCurr(cls==1,1:2); %xys for those rows
-            clusters{cl,1} = num2cell(clustXY);
-            clusters{cl,2} = cl;
-            if size(clustXY,1)>2
-                [hull, area] = convhull(clustXY);
-                clusters{cl,3} = num2cell(hull);
-                clusters{cl,4} = area;
+        [idx,d] = knnsearch(posPrev(:,1:2),posCurr(:,1:2)); %the closest neighbor to point in posCurr is posPrev(idx) with distance d
+        if size(idx)>0
+                for pt = 1:size(idx)
+                   if d(pt) <= eps*sm %If the point is within epsilon distance, set cid to prev cid
+                       posCurr(pt,4) = posPrev(idx(pt),3);
+                   else
+                       posCurr(pt,4) = 0;
+                   end
+                end
+
+            clusters = cell(max(posCurr(:,4)),4); %generate empty cell array
+            for cl = 1:max(posCurr(:,4)) %format and output data
+                cls = posCurr(:,4)==cl; %logical map for rows of current cl
+                clustXY = posCurr(cls==1,1:2); %xys for those rows
+                clusters{cl,1} = num2cell(clustXY);
+                clusters{cl,2} = cl;
+                if size(clustXY,1)>2
+                    [hull, area] = convhull(clustXY);
+                    clusters{cl,3} = num2cell(hull);
+                    clusters{cl,4} = area;
+                end
             end
+            tdata = clusters; %Returning an empty array until I can get this working.
+        else
+            tdata = [];
         end
-        tdata = clusters; %Returning an empty array until I can get this working.
     end
 end

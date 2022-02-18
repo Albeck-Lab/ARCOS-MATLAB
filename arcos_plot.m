@@ -52,14 +52,14 @@ end
 end %EOF
 %% Plot
 function image = plotter(XCoord, YCoord,cdata, time,tracked)
-    assert(~isempty(cdata{time}), sprintf('No data for given time %d', time));
+    
     if tracked == true
         rw = 3;
     else
         rw = 1;
     end
     clf
-    
+    assert(~isempty(cdata{rw, time}), sprintf('No data for given time %d', time));
     plot(XCoord(:,time),YCoord(:,time),'o', 'MarkerSize', 4, 'LineStyle', 'none' );
     hold on;
     axis square;
