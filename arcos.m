@@ -156,6 +156,7 @@ function pos = getPos(data)
     lpos(1,:)=[]; %remove the empty first line
     pos = lpos;
 end
+
 function tdata = arcos_track(cdata,t,sm)
     if (t-1==0) %If t-1 is out of bounds
         tdata = cdata{1,t};
@@ -185,7 +186,7 @@ function tdata = arcos_track(cdata,t,sm)
                     clusters{cl,4} = area;
                 end
             end
-            tdata = clusters; %Returning an empty array until I can get this working.
+            tdata = clusters;
         else
             tdata = [];
         end
