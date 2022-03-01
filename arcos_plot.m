@@ -17,6 +17,14 @@
 %%% Optional Inputs
 % * *save* - |boolean| - Set to true to save individual figures to file. *Default: false*
 % * *gif* - |boolean| - Set to true to save the timeseries as an animated gif. *Default: false*
+% * *tracked* - |boolean| - Set to false to display the untracking cluster
+% data. *Default: true*
+% * *usehull* - |boolean| - Set to false to exclude convex hulls around
+% clusters
+% * *outpath* - |String| - Specify an output folder for saved images and
+% gifs
+% * *bin* - |Cell x time Logical array| - Provide binarized data for cells
+% to visualize active but unclustered cells.
 %% Examples
 % *Using default parameters*
 %
@@ -32,6 +40,7 @@ p.gif = false;
 p.tracked = true;
 p.usehull = true;
 p.outpath = pwd;
+p.bin = [];
 nin = length(varargin);     %Check for even number of add'l inputs
 if rem(nin,2) ~= 0
     warning('Additional inputs must be provided as option, value pairs');  
@@ -43,18 +52,19 @@ mkdir(p.outpath);
 fh = figure();
 fh.WindowState = 'maximized';
 for time = t(1):t(end)
-    image = plotter(XCoord, YCoord, cdata, time,p.tracked, p.usehull);
+    image = plotter(XCoord, YCoord, cdata, time,p.tracked, p.usehull, p.bin);
     if p.save==true
         path = append(p.outpath,append('/',int2str(time)));
         saveas(image,append(path, '.png'))
     end
     if p.gif == true
-        gif(image,time, t(1))
+        gif(image,time, t(1),p.outpath)
     end
 end
+close gcf
 end %EOF
 %% Plot
-function image = plotter(XCoord, YCoord,cdata, time,tracked,usehull)
+function image = plotter(XCoord, YCoord,cdata, time,tracked,usehull,bin)
     
     if tracked == true
         rw = 3;
@@ -66,6 +76,11 @@ function image = plotter(XCoord, YCoord,cdata, time,tracked,usehull)
     plot(XCoord(:,time),YCoord(:,time),'o', 'MarkerSize', 4, 'LineStyle', 'none' );
     hold on;
     axis square;
+    if ~isempty(bin)
+        hold on;
+        plot(XCoord(bin(:,time)==1,time),YCoord(bin(:,time)==1,time),'o','MarkerEdgeColor','k', 'MarkerSize', 7,'LineStyle','none');
+        hold on;
+    end
     %xlim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
     %ylim([min(XCoord,[],'all'),max(XCoord,[],'all')]);
     xlim([0 inf])
@@ -88,8 +103,9 @@ function image = plotter(XCoord, YCoord,cdata, time,tracked,usehull)
     
 end
 %% GIF Maker
-function gif(image,idx, start)
-    filename = 'GIF.gif'; % Specify the output file name
+function gif(image,idx, start,outpath)
+    path = append(outpath,'/');
+    filename = append(path,'gif.gif'); % Specify the output file name
     im = frame2im(getframe(image));
     [A,map] = rgb2ind(im,256);
     if idx == start

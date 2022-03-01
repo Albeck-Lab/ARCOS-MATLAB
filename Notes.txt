@@ -52,3 +52,9 @@ Take in points only or binarized data?
 Points only = synthetic spreads only
 Points + bin = synthetic spreads + background noise
 
+
+
+
+
+
+226-271 tp of interest
