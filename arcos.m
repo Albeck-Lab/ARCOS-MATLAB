@@ -54,14 +54,12 @@
 % * <https://www.mathworks.com/help/matlab/ref/convhull.html Convex Hull>
 % * <https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf A Density-Based
 % Algorithm for Discovering Clusters>
-%% To Do
-% * Test for false-positive rate
-% * Test for divergence events
-% * Test for convergence events
+
 
 %%
 function cdata = arcos(XCoord, YCoord, bin, varargin)
-    p.eps = []; %Optional eps. If unspecified, eps will be calculated for every frame
+    p.eps = []; %Optional eps
+    p.minpts = [];
     p.sm = 1; %Tracking speed multiplier. Searches a wider radius for neighbor clusters. *Set at your own risk - may affect accuracy of tracking algorithm*
     %%Prepare additional inputs
     nin = length(varargin);     %Check for even number of add'l inputs
@@ -71,7 +69,7 @@ function cdata = arcos(XCoord, YCoord, bin, varargin)
     for s = 1:2:nin
         p.(lower(varargin{s})) = varargin{s+1};   
     end
-
+    
     %%Perform checks
     assert(~isempty(XCoord), 'No x coordinate data detected');
     assert(~isempty(YCoord), 'No y coordinate data detected');
@@ -79,17 +77,14 @@ function cdata = arcos(XCoord, YCoord, bin, varargin)
     if isempty(bin)
        warning('No binarized data supplied');
     end
-
-
-    %%Loop through time
-    cdata = cell(1,size(XCoord,2)); %Preallocate cdata for speed
+    if isempty(p.eps)
+        eps = arcos_utils.prep_dbscan(XCoord,YCoord);
+    else
+        eps = p.eps;
+    end
+    cdata = cell(3,size(XCoord,2));
     for time = 1:size(XCoord,2)
-        if isempty(p.eps)
-            [minpts, eps] = arcos_prep_dbscan(XCoord(:,time),YCoord(:,time));
-        else
-            eps = p.eps;
-            minpts = 4;
-        end
+        minpts = 4;
         activeXY = [XCoord(bin(:,time)==1,time), YCoord(bin(:,time)==1,time)];
         if isnan(eps) || eps <= 0
             eps = cdata{2,time-1}; %If the calculated value of epsilon is not usable then use the previously calculated value for epsilon
@@ -100,23 +95,6 @@ function cdata = arcos(XCoord, YCoord, bin, varargin)
         cdata{3,time} = arcos_track(cdata,time, p.sm); %Get 'tracked' data
     end
 end %wrapper function end
-
-%%Get minpts and epsilon
-function [minpts, eps] = arcos_prep_dbscan(XCoord, YCoord)
-    %%Calculate minpts
-    % Default is 4 for 2D data according to Ester et al., 1996)
-    minpts = ndims(XCoord)*2;
-    %%Calculate eps
-    [~,d] = knnsearch([XCoord,YCoord], [XCoord, YCoord],'K', minpts+1); %k-nearest neighbors search
-    d = max(d,[],2); %Biased toward greater distances as opposed to average of k-nearest
-    max_d = sort(d);
-    scaled = max_d * length(max_d)/max(max_d); %Scale the data
-    smoothed = smoothdata(scaled,'gaussian'); %Smooth it
-    slopes = gradient(smoothed); %Take first derivative
-    [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
-    eps = max_d(ix);
-    
-end %prep dbscan function end
 
 %%ARCOS Core
 % 
