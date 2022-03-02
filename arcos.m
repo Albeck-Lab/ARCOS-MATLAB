@@ -55,7 +55,6 @@
 % * <https://www.aaai.org/Papers/KDD/1996/KDD96-037.pdf A Density-Based
 % Algorithm for Discovering Clusters>
 
-
 %%
 function cdata = arcos(XCoord, YCoord, bin, varargin)
     p.eps = []; %Optional eps
