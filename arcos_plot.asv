@@ -25,7 +25,10 @@
 %
 % *Examples*
 %
+% <html>
+% <h1> Heading 1 </h1>
 
+% </html>
 classdef arcos_plot
     methods(Static)
         function plot(XCoord, YCoord, cdata,t,varargin) %Wrapper for plotter
