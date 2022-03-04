@@ -1,8 +1,13 @@
 %% ARCOS Utils
+% A collection of utilities for ARCOS
 %%% Format R
+% Formats data for ARCOS R package processing
 %%% Prep DBSCAN
+% Provides optimal epsilon and minpts values for DBSCAN
 %%% Binarize
+% Simple binarization function
 %%% Gen Synth
+% Generates synthetic spread events
 classdef arcos_utils
     methods(Static)
         function formatr(filename,XCoord,YCoord,bin)
@@ -41,13 +46,14 @@ classdef arcos_utils
             threshold = mean(prctile(ch,perc));
             bin = ch>threshold;
         end %EOF
-        function bin = gensynth(XCoord,YCoord,interval,varargin)
-            p.numspreads = 7;
-            p.bin = [];
-            p.dist = 1;
-            p.lifetime = 2;
-            p.seed = [];
-            p.maxsize = 2.8;
+        function bin = gensynth(XCoord,YCoord,varargin)
+            p.numspreads = 7; %How many spreads occur per cycle
+            p.freq = 10; %Spread frequency
+            p.bin = []; %Optional binarized data - useful for adding "noise"
+            p.dist = 1; %Distance the spread grows per frame (epsilon from prep_dbscan is a useful metric)
+            p.lifetime = 3; %How long a cell within a spread remains active before switching off
+            p.seed = []; %Optional seed value for random number generator
+            p.maxsize = 2.8; %Max spread size
             %%Setup
             nin = length(varargin);     %Check for even number of add'l inputs
             if rem(nin,2) ~= 0
@@ -56,36 +62,45 @@ classdef arcos_utils
             for s = 1:2:nin
                 p.(lower(varargin{s})) = varargin{s+1};   
             end
+            
             assert(sum(size(XCoord)==size(YCoord),'all')==2,'XCoord and YCoord must be equal size.');
-            binIn = boolean(zeros(size(XCoord,1), size(XCoord,2)));
+            binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));
             if ~isempty(p.seed) %Use user-provided seed
             rng(p.seed);
             end
-            if isempty(interval)
-                interval(1)=2;
-                interval(2)=size(XCoord,2);
+            for r = 1:round(size(binSynth,2)/p.freq)
+                col = r*p.freq-(p.freq-1);
+                for q = 1:p.numspreads %Generate random indices for starting pts
+                    istartPts(q,r) = randi(size(XCoord,1)); %#ok<AGROW>
+                    binSynth(istartPts(q,r),col) = 1;
+                end
             end
-            for q = 1:p.numspreads %Generate random indices for starting pts
-                istartPts(q,1) = randi(size(XCoord,1)); %#ok<AGROW>
-            end
-            binIn(istartPts,1) = 1; %Set start pts to active
-            startPts = [XCoord(istartPts,1),YCoord(istartPts,1)]; %Get coords for start pts
-            for time = interval(1):interval(2)
+            %binSynth(istartPts(:,),1:round(size(binSynth,2)/p.freq):end) = 1; %Set start pts to active
+           
+            cnt = 1;
+            sz = 1;
+            for time = 1:size(XCoord,2)
+                if time==1 || mod(time,p.freq) == 0 && cnt <=size(istartPts,2)
+                    startPts = [XCoord(istartPts(:,cnt),time),YCoord(istartPts(:,cnt),time)]; %Get coords for start pts
+                    cnt = cnt+1;
+                    sz = 1;
+                end
                 pts = [XCoord(:,time),YCoord(:,time)]; %Get all xy coords at current time
-                [idx,d] = rangesearch(pts,startPts,p.dist*time); %Get points within dist*time of start pts
+                [idx,d] = rangesearch(pts,startPts,p.dist*sz); %Get points within dist*time of start pts
+                sz = sz+1;
                 for i = 1:size(idx)
-                    binIn(idx{i}(d{i}<= p.dist*p.maxsize),time) = 1; %Set points within dist*time of start pts to active
-                    for row = 1:size(binIn,1)
-                        if sum(binIn(row,:))>=p.lifetime
-                        binIn(row,time)=0; %Set cells to inactive if they've been active > lifetime
+                    binSynth(idx{i}(d{i}<= p.dist*p.maxsize),time) = 1; %Set points within dist*time of start pts to active
+                    for row = 1:size(binSynth,1)
+                        if sum(binSynth(row,:))>=p.lifetime
+                        binSynth(row,time)=0; %Set cells to inactive if they've been active > lifetime
                         end
                     end
                 end
             end
             if ~isempty(p.bin) %Use user-provided binary data
-                bin = binIn+p.bin;
+                bin = binSynth+p.bin;
             else
-                bin = binIn;
+                bin = binSynth;
             end
         end %EOF
     end

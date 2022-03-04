@@ -56,8 +56,7 @@
 % Algorithm for Discovering Clusters>
 
 %%
-function cdata = arcos(XCoord, YCoord, bin, varargin)
-    p.eps = []; %Optional eps
+function cdata = arcos(XCoord, YCoord, bin,eps, varargin)
     p.minpts = [];
     p.sm = 1; %Tracking speed multiplier. Searches a wider radius for neighbor clusters. *Set at your own risk - may affect accuracy of tracking algorithm*
     %%Prepare additional inputs
@@ -76,19 +75,11 @@ function cdata = arcos(XCoord, YCoord, bin, varargin)
     if isempty(bin)
        warning('No binarized data supplied');
     end
-    if isempty(p.eps)
-        eps = arcos_utils.prep_dbscan(XCoord,YCoord);
-    else
-        eps = p.eps;
-    end
+    
     cdata = cell(3,size(XCoord,2));
     for time = 1:size(XCoord,2)
         minpts = 4;
         activeXY = [XCoord(bin(:,time)==1,time), YCoord(bin(:,time)==1,time)];
-        if isnan(eps) || eps <= 0
-            eps = cdata{2,time-1}; %If the calculated value of epsilon is not usable then use the previously calculated value for epsilon
-        end
-            
         cdata{1,time} = arcos_core(activeXY, eps, minpts); %Get untracked data
         cdata{2,time} = eps; %Store epsilon value used
         cdata{3,time} = arcos_track(cdata,time, p.sm); %Get 'tracked' data
