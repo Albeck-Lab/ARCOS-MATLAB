@@ -6,3 +6,6 @@
 **/*.db
 **/*.mat
 /Archive
+/Data
+/Tests
+/html
