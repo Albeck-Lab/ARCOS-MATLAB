@@ -83,7 +83,36 @@ classdef arcos_utils
             threshold = mean(prctile(ch,perc));
             bin = ch>threshold;
         end 
-        function bin = gensynth(XCoord,YCoord,varargin)
+        function bin_xy = binarize_xy(data,ch,xy,perc)
+            %% Pre-allocate output
+            bin_xy = cell(1,length(xy(1):xy(2)));
+            %% Loop through specified wells
+            for w = xy(1):xy(2)
+                %% Create / Update progress bar
+                if w == xy(1)
+                    bar = waitbar(w/length(xy(1):xy(2)),append('Binarizing XY ', int2str(w), ' of ', int2str(length(xy(1):xy(2)))));
+                else
+                   waitbar(w/length(xy(1):xy(2)),bar,append('Binarizing XY ', int2str(w), ' of ', int2str(length(xy(1):xy(2))))); 
+                end
+                %% Set chan based on ch
+                switch ch
+                   case 'EKAR'
+                       chan = data{w}.data.EKAR;
+                   case 'CFP_Nuc'
+                       chan = data{w}.data.CFP_Nuc;
+                   case 'YFP_Nuc'
+                       chan = data{w}.data.YFP_Nuc;
+                   case 'nEKAR'
+                       chan = data{w}.data.nEKAR;
+                   otherwise
+                       error('Invalid channel name');
+                end
+                %% Call wrapped function
+                bin_xy{w} = arcos_utils.binarize(chan,perc);
+            end
+            close(bar);
+        end
+        function bin_synth = gensynth(XCoord,YCoord,varargin)
             p.numspreads = 7; %How many spreads occur per cycle
             p.freq = 10; %Spread frequency
             p.bin = []; %Optional binarized data - useful for adding "noise"
@@ -99,12 +128,10 @@ classdef arcos_utils
             for s = 1:2:nin
                 p.(lower(varargin{s})) = varargin{s+1};   
             end
-            
-            assert(sum(size(XCoord)==size(YCoord),'all')==2,'XCoord and YCoord must be equal size.');
-            binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));
             if ~isempty(p.seed) %Use user-provided seed
-            rng(p.seed);
+                rng(p.seed);
             end
+            binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));
             for r = 1:round(size(binSynth,2)/p.freq)
                 col = r*p.freq-(p.freq-1);
                 for q = 1:p.numspreads %Generate random indices for starting pts
@@ -133,10 +160,86 @@ classdef arcos_utils
                 end
             end
             if ~isempty(p.bin) %Use user-provided binary data
-                bin = logical(binSynth+p.bin);
+                bin_synth = logical(binSynth+p.bin{well});
             else
-                bin = logical(binSynth);
+                bin_synth = logical(binSynth);
             end
+        end 
+        function bin_synth_xy = gensynth_xy(data,xy,varargin)
+            %% Default parameters
+            p.numspreads = 7; %How many spreads occur per cycle
+            p.freq = 10; %Spread frequency
+            p.bin = []; %Optional binarized data - useful for adding "noise"
+            p.dist = 1; %Distance the spread grows per frame (epsilon from prep_dbscan is a useful metric)
+            p.lifetime = 3; %How long a cell within a spread remains active before switching off
+            p.seed = []; %Optional seed value for random number generator
+            p.maxsize = 2.8; %Max spread size
+            %% Setup
+            nin = length(varargin);     %Check for even number of add'l inputs
+            if rem(nin,2) ~= 0
+                warning('Additional inputs must be provided as option-value pairs');  
+            end%Splits pairs to a structure
+            for s = 1:2:nin
+                p.(lower(varargin{s})) = varargin{s+1};   
+            end
+            %% Random Number Generator Seed
+            if ~isempty(p.seed) %Use user-provided seed
+                rng(p.seed);
+            end
+            %% Pre-allocate output
+            bin_synth_xy = cell(1,length(xy(1):xy(2)));
+            %% Loop through XYs (wells)
+            for well = xy(1):xy(2)
+                %% Create / Update progress bar
+                if well == xy(1)
+                    bar = waitbar(well/length(xy(1):xy(2)),append('Processing XY ', int2str(well), ' of ', int2str(length(xy(1):xy(2)))));
+                else
+                   waitbar(well/length(xy(1):xy(2)),bar,append('Processing XY ', int2str(well), ' of ', int2str(length(xy(1):xy(2))))); 
+                end
+                %% Assign X and Y Coords from data
+                XCoord = data{well}.data.XCoord;
+                YCoord = data{well}.data.YCoord;
+                %% Pre-allocate logical array
+                binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));
+                %% Loop through spread instances by frequency
+                for r = 1:round(size(binSynth,2)/p.freq)
+                    col = r*p.freq-(p.freq-1);
+                    %% Get random start points for the whole time series
+                    for q = 1:p.numspreads %Generate random indices for starting pts
+                        istartPts(q,r) = randi(size(XCoord,1)); %#ok<AGROW>
+                        binSynth(istartPts(q,r),col) = 1;
+                    end
+                end
+                cnt = 1;
+                sz = 1;
+                %% Loop through time series
+                for time = 1:size(XCoord,2)
+                    if time==1 || mod(time,p.freq) == 0 && cnt <=size(istartPts,2)
+                        startPts = [XCoord(istartPts(:,cnt),time),YCoord(istartPts(:,cnt),time)]; %Get coords for start pts
+                        cnt = cnt+1;
+                        sz = 1;
+                    end
+                    %% Set points within radius active
+                    pts = [XCoord(:,time),YCoord(:,time)]; %Get all xy coords at current time
+                    [idx,d] = rangesearch(pts,startPts,p.dist*sz); %Get points within dist*time of start pts
+                    sz = sz+1;
+                    for i = 1:size(idx)
+                        binSynth(idx{i}(d{i}<= p.dist*p.maxsize),time) = 1; %Set points within dist*time of start pts to active
+                        for row = 1:size(binSynth,1)
+                            if sum(binSynth(row,:))>=p.lifetime
+                            binSynth(row,time)=0; %Set cells to inactive if they've been active > lifetime
+                            end
+                        end
+                    end
+                end
+                %% Layer real data on top of synthetic
+                if ~isempty(p.bin) %Use user-provided binary data
+                    bin_synth_xy{well} = logical(binSynth+p.bin{well});
+                else
+                    bin_synth_xy{well} = logical(binSynth);
+                end
+            end %end well loop
+            close(bar);
         end 
     end
 end

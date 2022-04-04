@@ -1,65 +1,66 @@
 classdef arcos_analysis
     methods(Static)
-        function adata = analyze(XCoord,YCoord,cdata)
-            %%Load data into struct
-            timerange = size(cdata,2);
-            max_id = cdata{5,end};
-            clusters = repmat(struct('cid',[],'data',struct('time',{},'points',{},'id',{},'hull',{},'area',{}),'t_start',[],'t_end',[],'dur',[], 'maxarea',[],'rocarea',[],'maxsize',[],'rocsize',[],'compl',[]),max_id,1); %set up struct of structs
-            for time = 1:timerange
-                dtp = cdata{2,time}; %dtp = data at timepoint
-                for cluster = 1:size(dtp,2)
-                    id = mode(dtp(cluster).id(:,2)); %May not need the mode part... compare timeit results with and without mode.
-                    clusters(id).cid = id;
-                    clusters(id).data(time).time = time;
-                    clusters(id).data(time).points = dtp(cluster).points;
-                    clusters(id).data(time).id = dtp(cluster).id;
-                    clusters(id).data(time).hull = dtp(cluster).hull;
-                    clusters(id).data(time).area = dtp(cluster).area;
-                end
-            end
-            %Loop through substructs and remove empty entries
-            for i = 1:size(clusters,1)  
-                map = false(1,size(clusters(i).data,2));
-                for ii = 1:size(clusters(i).data,2)
-                    if isempty(clusters(i).data(ii).points) || isempty(clusters(i).data(ii).id)
-                        map(ii) = 1;
-                    end
-                end
-                clusters(i).data(map) = [];
-            end
-            %Get start and end timepoints for cluster
-            for i = 1:size(clusters,1)
-                if size(clusters(i).data,2)>0
-                    clusters(i).t_start = clusters(i).data(1).time;
-                    clusters(i).t_end = clusters(i).data(end).time;
-                    clusters(i).dur = 1+clusters(i).t_end - clusters(i).t_start; 
-                    areas = [clusters(i).data(:).area];
-                    clusters(i).maxarea = max(areas);
-                    clusters(i).rocarea = diff(areas);
-                    sizes = [];
-                    ratio = [];
-                    for ii = 1:size(clusters(i).data,2)
-                        sizes(ii) = size(clusters(i).data(ii).points,1); %#ok<AGROW>
-                        xq = XCoord(:,clusters(i).data(ii).time); %Query points x values
-                        yq = YCoord(:,clusters(i).data(ii).time); %Query points y values
-                        xv = clusters(i).data(ii).points(clusters(i).data(ii).hull,1); %Polygon x values
-                        yv = clusters(i).data(ii).points(clusters(i).data(ii).hull,2); %Polygon y values
-                        [in,on] = inpolygon(xq,yq,xv,yv); %Logical map of points in and on the polygon (separately)
-                        all = logical(in+on); %Logical map of points in and on the polygon (combined)
-                        nactive = size(clusters(i).data(ii).points,1);
-                        nall = sum(all);
-                        ratio(ii,1) = nactive/nall; %#ok<AGROW>
-                        %Ratio of active:inactive 
-                        %Inactive = all-active
-                    end
-                    clusters(i).maxsize = max(sizes);
-                    clusters(i).rocsize = diff(sizes);
-                    clusters(i).compl = ratio;
+        function out = analyze(arcos_data,raw_data)
+            %% Time Start
+            run_start = now;
+            for well = 1:size(arcos_data,2)
+                %% Progress bar setup
+                if well==1
+                    bar = waitbar(well/size(arcos_data,2),append('Analyzing well ',int2str(well),' of ', int2str(size(arcos_data,2))));
                 else
-                    continue
+                    waitbar(well/size(arcos_data,2),bar,append('Analyzing well ',int2str(well),' of ', int2str(size(arcos_data,2))));
                 end
+                clusters = arcos_data{2,well};
+                XCoord = raw_data{well}.data.XCoord;
+                YCoord = raw_data{well}.data.YCoord;
+                %% Loop through clusters
+                for i = 1:size(clusters,1)
+                    if size(clusters(i).data,2)>0
+                        for ii = 1:size(clusters(i).data,2)
+                            %% Boundary
+                            [bounds,area] = boundary(clusters(i).data(ii).points);
+                            clusters(i).data(ii).bounds = bounds;
+                            clusters(i).data(ii).area = area;
+                            %% Completion
+                            xq = XCoord(:,clusters(i).data(ii).time); %Query points x values
+                            yq = YCoord(:,clusters(i).data(ii).time); %Query points y values
+                            xv = clusters(i).data(ii).points(clusters(i).data(ii).bounds,1); %Polygon x values
+                            yv = clusters(i).data(ii).points(clusters(i).data(ii).bounds,2); %Polygon y values
+                            [in,on] = inpolygon(xq,yq,xv,yv); %Logical map of points in and on the polygon (separately)
+                            all = logical(in+on); %Logical map of points in and on the polygon (combined)
+                            nactive = size(clusters(i).data(ii).points,1);
+                            nall = sum(all);
+                            clusters(i).data(ii).compl = nactive/nall; %Inf where no boundary can be drawn
+                            %% Size
+                            clusters(i).data(ii).numpts = size(clusters(i).data(ii).points,1);
+                        end
+                        clusters(i).t_start = clusters(i).data(1).time; %First appearance of cluster
+                        clusters(i).t_end = clusters(i).data(end).time; %Last appearance of cluster
+                        clusters(i).dur = 1+clusters(i).t_end - clusters(i).t_start; %Total duration the cluster existed
+                        clusters(i).maxarea = max([clusters(i).data(:).area]); %Maximum area of cluster (should this include index of max?)
+                        rocarea = diff([clusters(i).data(:).area]); %Rate of change in area
+                        clusters(i).maxsize = max([clusters(i).data(:).numpts]);
+                        rocsize = diff([clusters(i).data(:).numpts]); %Rate of change in size
+                        for ii = 1:size(clusters(i).data,2)
+                            if ii == 1
+                                clusters(i).data(ii).rocarea = 0; %Rate of change since previous timepoint
+                                clusters(i).data(ii).rocsize = 0; %Rate of change since previous timepoint
+                            else
+                                clusters(i).data(ii).rocarea = rocarea(ii-1); %Rate of change since previous timepoint
+                                clusters(i).data(ii).rocsize = rocsize(ii-1); %Rate of change since previous timepoint
+                            end
+                        end
+                    else
+                        continue
+                    end
+                end
+                arcos_data{2,well} = clusters;
             end
-            adata = clusters;
+            out = arcos_data;
+            close(bar) %Close progress bar
+            run_end = now;
+            elapsed = datestr(run_end - run_start,'HH:MM:SS FFF');
+            disp(append('Elapsed time: ', elapsed));
         end
         function fdata = filter(adata,varargin)
             p.filt_dur = []; %Filter data by duration. Specify upper and lower duration thresholds
@@ -86,7 +87,7 @@ end
 % t_start: time point when cluster first appeared
 % t_end: time point when the cluster disappeared
 % dur: duration during which the cluster was tracked
-% maxarea: maximum area of the convex hull encompassing cluster
+% maxarea: maximum area of the boundary encompassing cluster
 % maxsize: the maximum number of cells
 % roc: rate of chance of maxarea
 % compl : completion - active cells / all cells within the cluster

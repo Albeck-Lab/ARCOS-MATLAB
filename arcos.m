@@ -1,9 +1,12 @@
 function out = arcos(data,xy,ch,varargin)
+    %% Time Start
+    run_start = now;
     %% Optional Parameters
-    p.upbin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
+    p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
     p.bin_perc = []; %Percentile for threshold binarization. 
     p.eps = [];
     p.minpts = [];
+    p.trackms = false; %Track merges and splits
     %% Prep varargin struct
     nin = length(varargin);
     if rem(nin,2) ~= 0
@@ -39,20 +42,17 @@ function out = arcos(data,xy,ch,varargin)
                error('Invalid channel name');
         end
         %% Check inputs
-        if isempty(p.upbin)
-            warning('Using simple threshold binarization');
+        if isempty(p.bin)
             bin = arcos_utils.binarize(channel,p.bin_perc); %Use simple binarization if no user-provided binarized data
         else
-            warning('Using user-provided binarization');
-            bin = p.upbin{well}; %Use user-provided binarization
+            bin = p.bin{well}; %Use user-provided binarization
+        end
+        if isempty(p.bin_perc) && isempty(p.bin)
+            warning("Optional parameter 'bin_perc' not set. Binarizing data using 80th percentile threshold")
+            p.bin_perc = 80;
         end
         assert(~isempty(XCoord), 'No x coordinate data detected');
         assert(~isempty(YCoord), 'No y coordinate data detected');
-        assert(~isempty(bin), 'No binary data detected');
-        assert(numel(XCoord) == numel(YCoord), 'XCoords and YCoords not equal')
-        if ~isempty(p.eps)
-            warning('User-specified epsilon detected');
-        end
         %% Preallocate cdata, initialize newmax
         cdata = cell(5,size(XCoord,2)); %Preallocation of output
         newmax = 0;
@@ -77,42 +77,46 @@ function out = arcos(data,xy,ch,varargin)
         end
         %% Perform analysis and assign to out cell
         out{1,well} = cdata;
-        out{2,well} = arcos_analysis.analyze(XCoord,YCoord,cdata);
+        %out{2,well} = arcos_analysis.analyze(XCoord,YCoord,cdata);
+        out{2,well} = reformat(cdata);
+        out{3,well}= bin;
     end
-    close(bar)
+    %% Loop through XY again (QA pass)
+    for qa = xy(1):xy(2)
+        
+    end
+    close(bar) %Close progress bar
+    %% Time End
+    run_end = now;
+    elapsed = datestr(run_end - run_start,'HH:MM:SS FFF');
+    disp(append('Elapsed time: ', elapsed));
+    disp('ARCOS has finished. Output columns are wells. Row 1: Cluster data by time. Row 2: Cluster data by cluster ID and analysis');
 end %wrapper function end
 function out = clustering(activeXY, eps, minpts)
-    out = struct('points',0,'id',0,'hull',0,'area',0);
+    out = struct('points',0,'id',0);
     if (isempty(activeXY))
-        return
+        return %Return control to main function if no active points
     end
     clusters = dbscan(activeXY, eps, minpts);
     for cl = 1:max(clusters)
         pts = activeXY(clusters==cl,:);
-        if size(pts,1)>2
-            [hull,area] = boundary(pts);
             out(cl).points = pts; % points in that cluster
             out(cl).id = cl; %cluster identity
-            out(cl).hull = hull;
-            out(cl).area = area;
-        else
-            continue
-        end 
     end
 end %clustering end
 function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
-    %Unpack structs into arrays
+    %% Unpack structs into arrays
     dCurr = unpack(sCurr); %XY and ID for clusters in curr
     dPrev = unpack(sPrev); %XY and ID for clusters in prev
-    %Check if the requisite data is present
+    %% Check if the requisite data is present
     if numel(dPrev)<=3 
         dPrev = unpack(bPrev);
     end
     if numel(dCurr)<=3 
-        tracks = []; %If not, return empty
+        tracks = []; %If no data, return empty
         return
     end
-    
+    %% Search neighbors and reassign
     [idx,d] = knnsearch(dPrev(:,1:2),dCurr(:,1:2)); %Indices and distances of current's neighbors in previous
     isClose = d <= eps;
     dCurr(isClose,4)= dPrev(idx(isClose),3);
@@ -133,26 +137,18 @@ function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
             dCurr(cluster,5) = 1;
         end
     end
+    %% Format and output new cluster assignments
     for i = 1:max(dCurr(:,4))
-        %Hull points based on new cluster assignment
         newclust = dCurr(:,4)==i;
-        if sum(newclust)>2
-            %[hull,area] = convhull(dCurr(newclust,1:2));
-            [hull,area] = boundary(dCurr(newclust,1:2));
-        else
-            hull = [];
-            area = [];
-        end
         tracks(i).points = dCurr(newclust,1:2);  %#ok<AGROW> %Points that make up the cluster
         tracks(i).id = dCurr(newclust,3:4); %#ok<AGROW> %original cluster ID, new cluster ID
-        tracks(i).hull = hull; %#ok<AGROW> %Indices of points that encompass all other points
-        tracks(i).area = area; %#ok<AGROW> %Area of the convex hull
         if dCurr(newclust,5) > 0
             tracks(i).new = 1; %#ok<AGROW> %Flag it reassigned cluster is new
         else
             tracks(i).new = 0; %#ok<AGROW>
         end
     end
+    %% Remove empty entries
     map = false(1,size(tracks,2));
     for i = 1:size(tracks,2)
         if isempty(tracks(i).points) || isempty(tracks(i).id)
@@ -165,7 +161,7 @@ function xy = unpack(d)
     xy = zeros(1,2);
     for i = 1:size(d,2) %Loop through struct elements
         for ii = 1:size(d(i).points) %Loop through elements of struct elements
-            xy(end+1,1:2) = d(i).points(ii,:);
+            xy(end+1,1:2) = d(i).points(ii,:); %#ok<AGROW>
             if size(d(i).id,2) > 1
                 xy(end,3) = d(i).id(ii,2);
                 disp('');
@@ -176,6 +172,33 @@ function xy = unpack(d)
     end
     xy(1,:) = [];
 end %unpack function end
+function clust_by_id = reformat(cdata)
+    %%Load data into struct
+    timerange = size(cdata,2);
+    max_id = cdata{5,end};
+    clusters = repmat(struct('cid',[],'data',struct('time',{},'points',{},'id',{},'numpts',{},'bounds',{},'area',{},'compl',{},'rocarea',{},'rocsize',{}),'t_start',[],'t_end',[],'dur',[], 'maxarea',[],'maxsize',[]),max_id,1); %set up struct of structs
+    for time = 1:timerange
+        dtp = cdata{2,time}; %dtp = data at timepoint
+        for cluster = 1:size(dtp,2)
+            id = mode(dtp(cluster).id(:,2)); %May not need the mode part... compare timeit results with and without mode.
+            clusters(id).cid = id;
+            clusters(id).data(time).time = time;
+            clusters(id).data(time).points = dtp(cluster).points;
+            clusters(id).data(time).id = dtp(cluster).id;
+        end
+    end
+    %Loop through substructs and remove empty entries
+    for i = 1:size(clusters,1)  
+        map = false(1,size(clusters(i).data,2));
+        for ii = 1:size(clusters(i).data,2)
+            if isempty(clusters(i).data(ii).points) || isempty(clusters(i).data(ii).id)
+                map(ii) = 1;
+            end
+        end
+        clusters(i).data(map) = [];
+    end
+    clust_by_id = clusters;
+end
 
 
 
@@ -185,16 +208,48 @@ end %unpack function end
 
 
 
-%Default for simple binarization - add flag to wrapper for more robust
-%binarization
 
-%Input flag to Allow/search for merges/splits
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %Take completed dataset and pass over it looking for merges/splits
 %Segregate clusters (or don't)
 
 %Set up structure in arcos procedure to do a second pass loop - performs
-%actions on output data (cdata).
-%QA pass basically. Find out if merge/splitting makes sense. 
+%actions on output data (cdata). 
 %Loop through data cluster-by-cluster rather than time-by-time.
 
 
@@ -263,9 +318,3 @@ end %unpack function end
 
 % Part 2 - lineage tracking
 
-%ARCOS Output
-%Row 1: Cluster data - untracked
-%Row 2: Cluster data - tracked
-%Row 3: Epsilon value used
-%Row 4: MinPts value used
-%Row 5: Highest cluster value assigned
