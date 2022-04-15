@@ -41,9 +41,14 @@ classdef arcos_utils
             eps = max_d(ix);
         end 
         function [eps,minpts] = prep_dbscan2(XCoord, YCoord, time)
-            minpts = ndims(XCoord)*2;
-            vals = zeros(1,time(2)+1-time(1));
-            for t = time(1):time(2)
+            %Gives eps and minpts for X and Y coords across the specified
+            %time interval. 
+            % This is useful if you wish to use static values for epsilon
+            % and minpts but are unable to calculate them.
+            minpts = ndims(XCoord)*2; %Minpts defined by dimensionality of data
+            vals = zeros(1,length(time)); %Preallocation of data
+            for it = 1:numel(time)
+                t = time(it);
                 [~,d] = knnsearch([XCoord(:,t),YCoord(:,t)], [XCoord(:,t), YCoord(:,t)],'K', minpts+1); %k-nearest neighbors search
                 d = max(d,[],2); %Biased toward greater distances as opposed to average of k-nearest
                 max_d = sort(d);
@@ -51,8 +56,8 @@ classdef arcos_utils
                 smoothed = smoothdata(scaled,'gaussian'); %Smooth it
                 slopes = gradient(smoothed); %Take first derivative
                 [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
-                eps = max_d(ix);
-                vals(t) = eps;
+                eps = max_d(ix); %Set epsilon to the value of max_d at index ix
+                vals(it) = eps; %Store eps in vals
             end
             real = ~isnan(vals); %Logical map of values ~= NaN
             eps = mean(vals(real)); %Mean of non-NaN epsilon values
@@ -65,7 +70,7 @@ classdef arcos_utils
             d_real = sort(d(~isnan(d(:,n)),n));
             eps = median(d_real); %Median distance to 11th neighbor of all points
             p = size(XCoord(bin),1)/size(XCoord,1); %Probability of cell being active
-            for k = n : -1 : 1
+            for k = n:-1:1
                 newP = nchoosek(n,k) .* p.^k .* (1-p).^(n-k);
                 P = P + newP;
                 if P > 0.01
@@ -83,34 +88,15 @@ classdef arcos_utils
             threshold = mean(prctile(ch,perc));
             bin = ch>threshold;
         end 
-        function bin_xy = binarize_xy(data,ch,xy,perc)
-            %% Pre-allocate output
-            bin_xy = cell(1,length(xy(1):xy(2)));
-            %% Loop through specified wells
-            for w = xy(1):xy(2)
-                %% Create / Update progress bar
-                if w == xy(1)
-                    bar = waitbar(w/length(xy(1):xy(2)),append('Binarizing XY ', int2str(w), ' of ', int2str(length(xy(1):xy(2)))));
-                else
-                   waitbar(w/length(xy(1):xy(2)),bar,append('Binarizing XY ', int2str(w), ' of ', int2str(length(xy(1):xy(2))))); 
-                end
-                %% Set chan based on ch
-                switch ch
-                   case 'EKAR'
-                       chan = data{w}.data.EKAR;
-                   case 'CFP_Nuc'
-                       chan = data{w}.data.CFP_Nuc;
-                   case 'YFP_Nuc'
-                       chan = data{w}.data.YFP_Nuc;
-                   case 'nEKAR'
-                       chan = data{w}.data.nEKAR;
-                   otherwise
-                       error('Invalid channel name');
-                end
-                %% Call wrapped function
-                bin_xy{w} = arcos_utils.binarize(chan,perc);
+        function [bin_xy,thr_xy] = binarize_xy(data,ch,xy,perc)
+            bin_xy = cell(1,length(xy));
+            thr_xy = cell(1,length(xy));
+            if ischar(ch); ch = {ch}; end
+            for iw = 1:numel(xy)
+                w = xy(iw);
+                chan = data{w}.data.(ch{1});
+                [bin_xy{w},thr_xy{w}] = arcos_utils.binarize(chan,perc); 
             end
-            close(bar);
         end
         function bin_synth = gensynth(XCoord,YCoord,varargin)
             p.numspreads = 7; %How many spreads occur per cycle
@@ -189,7 +175,8 @@ classdef arcos_utils
             %% Pre-allocate output
             bin_synth_xy = cell(1,length(xy(1):xy(2)));
             %% Loop through XYs (wells)
-            for well = xy(1):xy(2)
+            for iwell = 1:numel(xy)
+                well = xy(iwell);
                 %% Create / Update progress bar
                 if well == xy(1)
                     bar = waitbar(well/length(xy(1):xy(2)),append('Processing XY ', int2str(well), ' of ', int2str(length(xy(1):xy(2)))));

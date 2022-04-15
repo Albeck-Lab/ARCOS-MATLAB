@@ -3,6 +3,7 @@ classdef arcos_plot
         function plot(arcos_data,raw_data,xy,t,varargin)
             %% Optional parameters
             p.usebin = true; %Flag to use binarized data for visualizing active cells
+            p.usebounds = true;
             p.tracked = true; %Flag to plot tracked clusters or untracked clusters
             p.outpath = pwd;
             p.gif = false; %Flag to output images to gif
@@ -14,6 +15,11 @@ classdef arcos_plot
             end%Splits pairs to a structure
             for s = 1:2:nin
                 p.(lower(varargin{s})) = varargin{s+1};   
+            end
+            if p.usebounds == true
+                if isempty(arcos_data{2,1}(1).data(1).bounds)
+                    error('No bounds detected in data. Have you run analysis yet?')
+                end
             end
             %% Set up environment
             mkdir(p.outpath); %Make outpath if it doesn't exist
@@ -30,11 +36,11 @@ classdef arcos_plot
             for well = xy(1):xy(2)
                 mkdir(append(p.outpath,'/','XY ',int2str(well))); %Make output directory
                 pwell_data = arcos_data{1,well}; %Processed data for the indexed well
+                cwell_data = arcos_data{2,well}; %Cluster-wise data for the indexed well
                 rwell_data = raw_data{well}.data; %Raw data for the indexed well
                 rXCoord = rwell_data.XCoord; %XCoords for all points, indexed well
                 rYCoord = rwell_data.YCoord; %YCoords for all points, indexed well
                 binw = arcos_data{3,well};
-                
                 %% Loop through time
                 for time = t(1):t(end)
                     cdata = pwell_data{rw,time};
@@ -52,7 +58,7 @@ classdef arcos_plot
                             bin = logical(bin-p.bin_real);
                             plot(XCoord(p.bin_real),YCoord(p.bin_real),'o','MarkerEdgeColor','g', 'MarkerSize', 8,'LineStyle','none'); %Real data = green
                         end
-                        plot(XCoord(bin),YCoord(bin),'o','MarkerEdgeColor','r', 'MarkerSize', 8,'LineStyle','none'); %Synthetic data = red
+                        plot(XCoord(bin),YCoord(bin),'o','MarkerEdgeColor','r', 'MarkerSize', 3,'LineStyle','none'); %Synthetic data = red
                         hold on;
                     end
                     xlim([0 inf])
@@ -60,12 +66,20 @@ classdef arcos_plot
                     for event = 1:size(cdata,2) %Plot collective events
                         if cdata(event).points > 0
                             xy = cdata(event).points;
-                            plot(xy(:,1),xy(:,2), 'o','MarkerEdgeColor','b','MarkerSize', 8, 'LineStyle', 'none') %clusters = blue
-%                             if p.usebounds == true              %Plot bounds if specified
-%                                 bounds = cdata(event).bounds;
-%                                 plot(xy(bounds,1),xy(bounds,2), 'b');
-%                             end
+                            plot(xy(:,1),xy(:,2), 'o','MarkerEdgeColor','b','MarkerSize', 3, 'LineStyle', 'none') %clusters = blue
                             hold on
+                        end
+                    end
+                    if p.usebounds == true              %Plot bounds if specified
+                        for cluster = 1:size(cwell_data,1)
+                            for itime = 1:size(cwell_data(cluster).data,2)
+                                if cwell_data(cluster).data(itime).time == time
+                                    hold on
+                                    bounds = cwell_data(cluster).data(itime).bounds;
+                                    points = cwell_data(cluster).data(itime).points;
+                                    plot(points(bounds,1),points(bounds,2),'b');
+                                end
+                            end
                         end
                     end
                     title(append("Well: ",int2str(well)," Time: ",int2str(time)));
@@ -123,3 +137,7 @@ classdef arcos_plot
         end 
     end 
 end
+
+
+%tiledlayout - make figure, tell it dimensions of output or put in "flow"
+%to dynamically change. Have to say "nexttile" even for first tile
