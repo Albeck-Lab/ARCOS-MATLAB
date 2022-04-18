@@ -1,6 +1,6 @@
 classdef arcos_plot
     methods(Static)
-        function plot(arcos_data,raw_data,xy,t,varargin)
+        function plot(clust_by_time,clust_by_id,binarized_data,raw_data,xy,t,varargin)
             %% Optional parameters
             p.usebin = true; %Flag to use binarized data for visualizing active cells
             p.usebounds = true;
@@ -17,7 +17,7 @@ classdef arcos_plot
                 p.(lower(varargin{s})) = varargin{s+1};   
             end
             if p.usebounds == true
-                if isempty(arcos_data{2,1}(1).data(1).bounds)
+                if isempty(clust_by_id{1}(1).data(1).bounds) %This will bug out if there's no data in clust_by_id{1}
                     error('No bounds detected in data. Have you run analysis yet?')
                 end
             end
@@ -26,24 +26,25 @@ classdef arcos_plot
             fh = figure(); %Figure handle
             set(fh,'WindowStyle','Normal') %Set figure window behavior
             set(fh,'Resize','off') %Lock figure dimensions
-            if p.tracked == true %Select tracked or untracked dataset
-                rw = 2; %Row 2 = tracked cluster data
-            else
-                rw = 1; %Row 1 = untracked cluster data
-            end
             warning("Warning: Do not close the figure until the process has finished");
             %% Loop through XY
-            for well = xy(1):xy(2)
-                mkdir(append(p.outpath,'/','XY ',int2str(well))); %Make output directory
-                pwell_data = arcos_data{1,well}; %Processed data for the indexed well
-                cwell_data = arcos_data{2,well}; %Cluster-wise data for the indexed well
+            for iwell = 1:numel(xy)
+				well = xy(iwell);
+                mkdir(append(p.outpath,'\XY ',int2str(well))); %Make output directory
+                pwell_data = clust_by_time{well}; %Processed data for the indexed well
+                cwell_data = clust_by_id{well}; %Cluster-wise data for the indexed well
                 rwell_data = raw_data{well}.data; %Raw data for the indexed well
                 rXCoord = rwell_data.XCoord; %XCoords for all points, indexed well
                 rYCoord = rwell_data.YCoord; %YCoords for all points, indexed well
-                binw = arcos_data{3,well};
+                binw = binarized_data{well};
                 %% Loop through time
-                for time = t(1):t(end)
-                    cdata = pwell_data{rw,time};
+                for itime = 1:numel(t)
+					time = t(itime);
+					if p.tracked == true
+						cdata = pwell_data(time).tracked;
+					else
+						cdata = pwell_data(time).untracked;
+					end
                     XCoord = rXCoord(:,time);
                     YCoord = rYCoord(:,time);
                     %image = plotter(XCoord(:,time), YCoord(:,time), cdata{rw,time},time, p.usebounds, p.bin(:,time),p.bin_real(:,time));
@@ -64,9 +65,9 @@ classdef arcos_plot
                     xlim([0 inf])
                     ylim([0 inf])
                     for event = 1:size(cdata,2) %Plot collective events
-                        if cdata(event).points > 0
-                            xy = cdata(event).points;
-                            plot(xy(:,1),xy(:,2), 'o','MarkerEdgeColor','b','MarkerSize', 3, 'LineStyle', 'none') %clusters = blue
+                        if cdata(event).XYCoord > 0
+                            xycoord = cdata(event).XYCoord;
+                            plot(xycoord(:,1),xycoord(:,2), 'o','MarkerEdgeColor','b','MarkerSize', 3, 'LineStyle', 'none') %clusters = blue
                             hold on
                         end
                     end
@@ -76,14 +77,18 @@ classdef arcos_plot
                                 if cwell_data(cluster).data(itime).time == time
                                     hold on
                                     bounds = cwell_data(cluster).data(itime).bounds;
-                                    points = cwell_data(cluster).data(itime).points;
+                                    points = cwell_data(cluster).data(itime).XYCoord;
                                     plot(points(bounds,1),points(bounds,2),'b');
                                 end
                             end
                         end
                     end
                     title(append("Well: ",int2str(well)," Time: ",int2str(time)));
-                    legend('inactive','active real','active synth','cluster','bounds','Location','northeastoutside');
+					if isempty(p.bin_real)
+						legend('inactive','active','cluster','bounds','Location','northeastoutside');
+					else
+						legend('inactive','active_real','ative_synth','cluster','bounds','Location','northeastoutside');
+					end
                     set(gca,'ydir','reverse') %Reverse Y axis (image origin is top left)
                     image = gcf;
                     saveas(image,append(p.outpath,'/','XY ',int2str(well),'/',sprintf('%04d',time), '.png'))

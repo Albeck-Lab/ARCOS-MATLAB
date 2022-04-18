@@ -1,86 +1,56 @@
 function [clust_by_time, clust_by_id, binaries] = arcos(data,xy,ch,varargin)
-    %% Optional Parameters
-    p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
-    p.bin_perc = []; %Percentile for threshold binarization
-    p.eps = {};
-    p.minpts = {};
-    %% Prep varargin struct
-    nin = length(varargin);
+	%% Optional Parameters
+	p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
+	p.bin_perc = []; %Percentile for threshold binarization
+	p.eps = {};
+	p.minpts = {};
+	%% Prep varargin struct
+	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs');  end
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1};   end
 	%% Channel prep
-    if ischar(ch); ch = {ch}; end % assert ch is cell
-    %% Preallocate out
-    %out = cell(1,size(data,2));
+	if ischar(ch); ch = {ch}; end % assert ch is cell
+	%% Preallocate out
 	clust_by_time = cell(1,length(xy));
 	clust_by_id = cell(1,length(xy));
 	binaries = cell(1,length(xy));
-    %% Check XYs
-    goodxys = ~arrayfun(@(x)isempty(data{x}.cellindex),xy);% check to see if the input xys are good
-    xy = xy(goodxys);
-    %% Loop through XY
+	%% Check XYs
+	goodxys = ~arrayfun(@(x)isempty(data{x}.cellindex),xy);% check to see if the input xys are good
+	xy = xy(goodxys);
+	%% Loop through XY
 	numXYs = numel(xy);
-    for iwell = 1:numXYs
-        well = xy(iwell);
-        %% Define XCoord and YCoord
-        XCoord = data{well}.data.XCoord;
-        YCoord = data{well}.data.YCoord;
+	for iwell = 1:numXYs
+		well = xy(iwell);
+		%% Define XCoord and YCoord
+		XCoord = data{well}.data.XCoord;
+		YCoord = data{well}.data.YCoord;
 		assert(~isempty(XCoord), 'No x coordinate data detected');
-        assert(~isempty(YCoord), 'No y coordinate data detected');
-        %% Channel selection
-        channel = data{well}.data.(ch{1}); %Create wrapper function to loop through desired channels       
-        %% Setup: Binarization
+		assert(~isempty(YCoord), 'No y coordinate data detected');
+		%% Channel selection
+		channel = data{well}.data.(ch{1}); %Create wrapper function to loop through desired channels       
+		%% Setup: Binarization
 		if isempty(p.bin_perc) && isempty(p.bin)
-            warning("Optional parameter 'bin_perc' not set. Binarizing data using 80th percentile threshold")
-            p.bin_perc = 80;
+			warning("Optional parameter 'bin_perc' not set. Binarizing data using 80th percentile threshold")
+			p.bin_perc = 80;
 		end
-        if isempty(p.bin)
-            if ~isempty(p.bin_perc)
-                bin = arcos_utils.binarize(channel,p.bin_perc); %Use simple binarization if no user-provided binarized data
-            else
-               error("No binarized data has been provided, so please specify a percentile threshold to binarize data. Ex 'bin_perc', 80"); 
-            end
-        else
-            bin = p.bin{well}; %Use user-provided binarization
-        end
-        
-        %% Format outputs
+		if isempty(p.bin)
+			if ~isempty(p.bin_perc)
+				bin = arcos_utils.binarize(channel,p.bin_perc); %Use simple binarization if no user-provided binarized data
+			else
+			   error("No binarized data has been provided, so please specify a percentile threshold to binarize data. Ex 'bin_perc', 80"); 
+			end
+		else
+			bin = p.bin{well}; %Use user-provided binarization
+		end
+		%% Format outputs
 		if ~isempty(p.eps); eps = p.eps{well}; else eps = []; end 
 		if ~isempty(p.minpts); minpts = p.minpts{well}; else minpts = [];end 
-        clust_by_time{well} = arcos_core(XCoord,YCoord,bin,'eps',eps,'minpts',minpts);
-		clust_by_id{well} = reformat(clust_by_time{well});
+		clust_by_time{well} = arcos_core(XCoord,YCoord,bin,'eps',eps,'minpts',minpts);
+		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
 		binaries{well} = bin;
-        %out{2,well} = reformat(cdata); %Clusters by ID
-        %out{3,well}= bin; %Binarization data
-    end
+	end
 end %wrapper function end
-function out = reformat(cdata)
-    %% Load data into struct
-    timerange = size(cdata,2);
-    max_id = cdata(end).newmax;
-    clusters = repmat(struct('cid',[],'data',struct('time',{},'XYCoord',{},'id',{},'numpts',{},'bounds',{},'inactive',{},'area',{},'compl',{},'rocarea',{},'roccount',{}),'t_start',[],'t_end',[],'dur',[], 'maxarea',[],'maxcount',[]),max_id,1); %set up struct of structs
-    for time = 1:timerange
-        dtp = cdata(time).tracked; %dtp = data at timepoint
-        for cluster = 1:size(dtp,2)
-            id = mode(dtp(cluster).id(:,2)); %May not need the mode part... compare timeit results with and without mode.
-            clusters(id).cid = id;
-            clusters(id).data(time).time = time;
-            clusters(id).data(time).XYCoord = dtp(cluster).XYCoord;
-            clusters(id).data(time).id = dtp(cluster).id;
-        end
-    end
-    %% Loop through substructs and remove empty entries
-    for i = 1:size(clusters,1)  
-        map = false(1,size(clusters(i).data,2));
-        for ii = 1:size(clusters(i).data,2)
-            if isempty(clusters(i).data(ii).XYCoord) || isempty(clusters(i).data(ii).id)
-                map(ii) = 1;
-            end
-        end
-        clusters(i).data(map) = [];
-    end
-    out = clusters;
-end
+		
 
 
 

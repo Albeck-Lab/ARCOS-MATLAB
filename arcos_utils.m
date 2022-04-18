@@ -227,6 +227,33 @@ classdef arcos_utils
                 end
             end %end well loop
             close(bar);
-        end 
+		end 
+		function out = reformat(cdata)
+			%% Load data into struct
+			timerange = size(cdata,2);
+			max_id = cdata(end).newmax;
+			clusters = repmat(struct('cid',[],'data',struct('time',{},'XYCoord',{},'id',{},'numpts',{},'bounds',{},'inactive',{},'area',{},'compl',{},'rocarea',{},'roccount',{}),'t_start',[],'t_end',[],'dur',[], 'maxarea',[],'maxcount',[]),max_id,1); %set up struct of structs
+			for time = 1:timerange
+				dtp = cdata(time).tracked; %dtp = data at timepoint
+				for cluster = 1:size(dtp,2)
+					id = mode(dtp(cluster).id(:,2)); %May not need the mode part... compare timeit results with and without mode.
+					clusters(id).cid = id;
+					clusters(id).data(time).time = time;
+					clusters(id).data(time).XYCoord = dtp(cluster).XYCoord;
+					clusters(id).data(time).id = dtp(cluster).id;
+				end
+			end
+			%% Loop through substructs and remove empty entries
+			for i = 1:size(clusters,1)  
+				map = false(1,size(clusters(i).data,2));
+				for ii = 1:size(clusters(i).data,2)
+					if isempty(clusters(i).data(ii).XYCoord) || isempty(clusters(i).data(ii).id)
+						map(ii) = 1;
+					end
+				end
+				clusters(i).data(map) = [];
+			end
+			out = clusters;
+		end
     end
 end
