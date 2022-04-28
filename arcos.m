@@ -2,14 +2,19 @@ function [clust_by_time, clust_by_id, binaries] = arcos(data,xy,ch,varargin)
 	%% Optional Parameters
 	p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
 	p.bin_perc = []; %Percentile for threshold binarization
-	p.eps = {};
-	p.minpts = {};
+	p.eps = {[]};
+	p.minpts = {[]};
 	%% Prep varargin struct
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs');  end
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1};   end
 	%% Channel prep
 	if ischar(ch); ch = {ch}; end % assert ch is cell
+    if isdouble(p.eps); p.eps = {p.eps}; end %assert eps is cell
+    if isdouble(p.minpts); p.minpts = {p.minpts}; end %assert eps is cell
+
+	%% 
+	if isempty(xy); xy = (1:size(data,2)); end
 	%% Preallocate out
 	clust_by_time = cell(1,length(xy));
 	clust_by_id = cell(1,length(xy));
@@ -19,7 +24,7 @@ function [clust_by_time, clust_by_id, binaries] = arcos(data,xy,ch,varargin)
 	xy = xy(goodxys);
 	%% Loop through XY
 	numXYs = numel(xy);
-	for iwell = 1:numXYs
+    for iwell = 1:numXYs
 		well = xy(iwell);
 		%% Define XCoord and YCoord
 		XCoord = data{well}.data.XCoord;
@@ -35,22 +40,34 @@ function [clust_by_time, clust_by_id, binaries] = arcos(data,xy,ch,varargin)
 		end
 		if isempty(p.bin)
 			if ~isempty(p.bin_perc)
-				bin = arcos_utils.binarize(channel,p.bin_perc); %Use simple binarization if no user-provided binarized data
+				%bin = arcos_utils.binarize(channel,p.bin_perc); %Use simple binarization if no user-provided binarized data
+				error("Automatic binarization is currently offline. Please use arcos_utils.pulse2bin to binarize your data")
 			else
 			   error("No binarized data has been provided, so please specify a percentile threshold to binarize data. Ex 'bin_perc', 80"); 
 			end
 		else
 			bin = p.bin{well}; %Use user-provided binarization
 		end
-		%% Format outputs
-		if ~isempty(p.eps); eps = p.eps{well}; else eps = []; end 
-		if ~isempty(p.minpts); minpts = p.minpts{well}; else minpts = [];end 
-		clust_by_time{well} = arcos_core(XCoord,YCoord,bin,'eps',eps,'minpts',minpts);
+		%% Format and assign eps and minpts (if given)
+		if numel(p.eps) == 1; eps = p.eps{1}; else; eps = p.eps{well}; end 
+		if numel(p.mintps) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
+		
+        %% Do the arcos functions
+        clust_by_time{well} = arcos_core(XCoord,YCoord,bin,'eps',eps,'minpts',minpts);
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
 		binaries{well} = bin;
-	end
+    end %well loop
 end %wrapper function end
 		
+
+
+
+
+
+
+
+
+
 
 
 

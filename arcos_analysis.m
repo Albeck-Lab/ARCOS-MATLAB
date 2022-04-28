@@ -1,24 +1,16 @@
 classdef arcos_analysis
     methods(Static)
-        function out = analyze(arcos_data,raw_data)
-            %% Time Start
-            run_start = now;
-            %%Check for XYs with data and get their indicies
-            xy = 1:numel(arcos_data);
-            goodxys = ~cellfun(@isempty,arcos_data);% check to see if the input xys are good
+        function out = analyze(clust_by_id,raw_data)
+            %% Check for XYs with data and get their indicies
+            xy = 1:numel(clust_by_id);
+            goodxys = ~cellfun(@isempty,clust_by_id);% check to see if the input xys are good
             xy = xy(goodxys);
             %% Loop through XYs
             numXYs = numel(xy);
             for iwell = 1:numXYs
                 well = xy(iwell);
-                %% Progress bar setup
-                if iwell==1
-                    bar = waitbar(iwell/numXYs,append('Analyzing well ',int2str(iwell),' of ', int2str(numXYs)));
-                else
-                    waitbar(iwell/numXYs,bar,append('Analyzing well ',int2str(iwell),' of ', int2str(numXYs)));
-                end
                 %% Store clusters and coords
-                clusters = arcos_data{well}; %fixed - change this for new input structure (single row cell array)
+                clusters = clust_by_id{well}; %fixed - change this for new input structure (single row cell array)
                 XCoord = raw_data{well}.data.XCoord;
                 YCoord = raw_data{well}.data.YCoord;
                 %% Loop through clusters
@@ -70,16 +62,11 @@ classdef arcos_analysis
                         continue
                     end
                 end
-                arcos_data{well} = clusters; %fixed - change this for new input structure (single row cell array)
+                clust_by_id{well} = clusters; %fixed - change this for new input structure (single row cell array)
             end
-            out = arcos_data;
-            %% Clean up and time reporting
-            close(bar) %Close progress bar
-            run_end = now;
-            elapsed = datestr(run_end - run_start,'HH:MM:SS FFF');
-            disp(append('Elapsed time: ', elapsed));
+            out = clust_by_id;
         end
-        function out = filter(arcos_data,fts,varargin)
+        function out = filter(clust_by_id,fts,varargin)
             % example input 
             % fts(1).t = 'Min'; fts(1).c = 'dur'; fts(1).p = 5;
             % this would filter and keep all the data where the spread
@@ -95,11 +82,11 @@ classdef arcos_analysis
 
             %process either certain xys or all of them
             if ~isempty(p.xy)
-                goodXYs = ~cellfun(@isempty,arcos_data(p.xy));
+                goodXYs = ~cellfun(@isempty,clust_by_id(p.xy));
                 XYnums = p.xy(goodXYs);
             else % figure out how many xys there are and which have data
-                XYnums = 1:size(arcos_data,2);
-                goodXYs = ~cellfun(@isempty,arcos_data);
+                XYnums = 1:size(clust_by_id,2);
+                goodXYs = ~cellfun(@isempty,clust_by_id);
                 XYnums = XYnums(goodXYs);
             end      
             
@@ -132,13 +119,13 @@ classdef arcos_analysis
             %% Loop over all the data and see what you want to keep
             for iXY = 1:numel(XYnums)
                 tXY = XYnums(iXY);
-                keepThese = false(size(arcos_data{tXY},1),nFts); % set up the logicals for the filers
+                keepThese = false(size(clust_by_id{tXY},1),nFts); % set up the logicals for the filers
                 for iFt = 1:nFts %hehe NFTs
                     % See if special filtering is needed and do it if so
                     if functLog(iFt)
-                        aData = arrayfun(str2func(fNames{trueFts{iFt},2}),arcos_data{tXY});                      
+                        aData = arrayfun(str2func(fNames{trueFts{iFt},2}),clust_by_id{tXY});                      
                     else
-                        aData = [arcos_data{tXY}.(fts(iFt).c)]';
+                        aData = [clust_by_id{tXY}.(fts(iFt).c)]';
                     end
                     
                     %fill in the logicals for keeping the data
@@ -156,10 +143,10 @@ classdef arcos_analysis
                 keepThese = all(keepThese,2);
                 
                 % keep the data you actually want
-                arcos_data{tXY} = arcos_data{tXY}(keepThese);
+                clust_by_id{tXY} = clust_by_id{tXY}(keepThese);
                 
             end %xy loop
-            out = arcos_data;
+            out = clust_by_id;
             
             end %if check for matching parameters 
             end %if check for at least one filter

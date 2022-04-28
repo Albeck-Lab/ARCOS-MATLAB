@@ -17,7 +17,7 @@ classdef arcos_plot
                 p.(lower(varargin{s})) = varargin{s+1};   
             end
             if p.usebounds == true
-                if isempty(clust_by_id{1}(1).data(1).bounds) %This will bug out if there's no data in clust_by_id{1}
+                if isempty(clust_by_id{xy(1)}(1).data(1).bounds) %This will bug out if there's no data in clust_by_id{1}
                     error('No bounds detected in data. Have you run analysis yet?')
                 end
             end
@@ -26,7 +26,8 @@ classdef arcos_plot
             fh = figure(); %Figure handle
             set(fh,'WindowStyle','Normal') %Set figure window behavior
             set(fh,'Resize','off') %Lock figure dimensions
-            warning("Warning: Do not close the figure until the process has finished");
+            warning("Do not close the figure until the process has finished");
+			warning('off','MATLAB:legend:IgnoringExtraEntries');
             %% Loop through XY
             for iwell = 1:numel(xy)
 				well = xy(iwell);
@@ -52,7 +53,7 @@ classdef arcos_plot
                     plot(XCoord,YCoord,'o', 'MarkerEdgeColor','k', 'MarkerSize', 3, 'LineStyle', 'none' ); %plot all cells in frame
                     hold on;
                     axis square;
-                    if p.usebin == true %Plot active cells
+                    if p.usebin %Plot active cells
                         bin = binw(:,time);
                         hold on;
                         if ~isempty(p.bin_real)
@@ -71,13 +72,13 @@ classdef arcos_plot
                             hold on
                         end
                     end
-                    if p.usebounds == true              %Plot bounds if specified
+                    if p.usebounds              %Plot bounds if specified
                         for cluster = 1:size(cwell_data,1)
-                            for itime = 1:size(cwell_data(cluster).data,2)
-                                if cwell_data(cluster).data(itime).time == time
+                            for itime2 = 1:size(cwell_data(cluster).data,2)
+                                if cwell_data(cluster).data(itime2).time == time
                                     hold on
-                                    bounds = cwell_data(cluster).data(itime).bounds;
-                                    points = cwell_data(cluster).data(itime).XYCoord;
+                                    bounds = cwell_data(cluster).data(itime2).bounds;
+                                    points = cwell_data(cluster).data(itime2).XYCoord;
                                     plot(points(bounds,1),points(bounds,2),'b');
                                 end
                             end
@@ -101,21 +102,21 @@ classdef arcos_plot
             end
         end 
         function gif(path,name)
+			disp('An empty figure will appear. Do not close it until processing completes')
             files = dir(append(path,'/*.png')); %Get list of filenames
             filename = append(path,'/',name,'.gif'); % Specify the output file name
-            for f = 1:length(files) %Loop through files list
+			for f = 1:length(files) %Loop through files list
                 im = imread(append(files(f).folder,'/',files(f).name)); %Read image into memory
                 [A,map] = rgb2ind(im,256); %Convert from rgb
                 if f == 1
                     imwrite(A,map,filename,'gif','LoopCount',Inf); %Initialize gif
-                    bar = waitbar(f/length(files),append('Assembling GIF ',int2str(f),' of ', int2str(length(files)))); %Initialize progress bar
                 else
                     imwrite(A,map,filename,'gif','WriteMode','append'); %Append gif
-                    waitbar(f/length(files),bar,append('Assembling GIF ',int2str(f),' of ', int2str(length(files)))); %Update progress bar
                 end
                 hold off
-            end
-            close(bar); %Close progress bar
+			end
+			disp('Processing complete')
+			close(gcf)
         end 
         function gif_sbs(path1,path2,name)
             warning('Assuming equal numbers of files in both directories');
@@ -139,7 +140,8 @@ classdef arcos_plot
             close(bar);
             close gcf
             disp(append('GIF Assembly complete. File saved in ',path1))
-        end 
+		end
+		
     end 
 end
 

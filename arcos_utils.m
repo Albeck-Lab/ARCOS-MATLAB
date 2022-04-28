@@ -1,6 +1,6 @@
 classdef arcos_utils
     methods(Static)
-        function formatr(filename,XCoord,YCoord,bin)
+		function out = formatr(filename,XCoord,YCoord,bin)
             array = zeros(size(bin,1)*size(bin,2),5); %preallocate array
             sz = size(bin,1);
             for col = 1:size(bin,2)
@@ -27,6 +27,7 @@ classdef arcos_utils
             end
             table = array2table(array); %Convert array to table
             table.Properties.VariableNames(1:5) = ["t","x","y","m","id"]; %Set table field names
+			out = table;
             writetable(table,append(filename,'.csv')); %Write to file
         end 
         function [eps,minpts] = prep_dbscan(XCoord, YCoord)
@@ -41,10 +42,6 @@ classdef arcos_utils
             eps = max_d(ix);
         end 
         function [eps,minpts] = prep_dbscan2(XCoord, YCoord, time)
-            %Gives eps and minpts for X and Y coords across the specified
-            %time interval. 
-            % This is useful if you wish to use static values for epsilon
-            % and minpts but are unable to calculate them.
             minpts = ndims(XCoord)*2; %Minpts defined by dimensionality of data
             vals = zeros(1,length(time)); %Preallocation of data
             for it = 1:numel(time)
@@ -84,7 +81,8 @@ classdef arcos_utils
                 minpts = k;
             end
         end
-        function [bin,threshold] = binarize(ch,perc)
+        %{
+		function [bin,threshold] = binarize(ch,perc)
             threshold = mean(prctile(ch,perc));
             bin = ch>threshold;
         end 
@@ -97,61 +95,45 @@ classdef arcos_utils
                 chan = data{w}.data.(ch{1});
                 [bin_xy{w},thr_xy{w}] = arcos_utils.binarize(chan,perc); 
             end
-        end
-        function bin_synth = gensynth(XCoord,YCoord,varargin)
-            p.numspreads = 7; %How many spreads occur per cycle
-            p.freq = 10; %Spread frequency
-            p.bin = []; %Optional binarized data - useful for adding "noise"
-            p.dist = 1; %Distance the spread grows per frame (epsilon from prep_dbscan is a useful metric)
-            p.lifetime = 3; %How long a cell within a spread remains active before switching off
-            p.seed = []; %Optional seed value for random number generator
-            p.maxsize = 2.8; %Max spread size
-            %%Setup
-            nin = length(varargin);     %Check for even number of add'l inputs
-            if rem(nin,2) ~= 0
-                warning('Additional inputs must be provided as option-value pairs');  
-            end%Splits pairs to a structure
-            for s = 1:2:nin
-                p.(lower(varargin{s})) = varargin{s+1};   
-            end
-            if ~isempty(p.seed) %Use user-provided seed
-                rng(p.seed);
-            end
-            binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));
-            for r = 1:round(size(binSynth,2)/p.freq)
-                col = r*p.freq-(p.freq-1);
-                for q = 1:p.numspreads %Generate random indices for starting pts
-                    istartPts(q,r) = randi(size(XCoord,1)); %#ok<AGROW>
-                    binSynth(istartPts(q,r),col) = 1;
-                end
-            end
-            cnt = 1;
-            sz = 1;
-            for time = 1:size(XCoord,2)
-                if time==1 || mod(time,p.freq) == 0 && cnt <=size(istartPts,2)
-                    startPts = [XCoord(istartPts(:,cnt),time),YCoord(istartPts(:,cnt),time)]; %Get coords for start pts
-                    cnt = cnt+1;
-                    sz = 1;
-                end
-                pts = [XCoord(:,time),YCoord(:,time)]; %Get all xy coords at current time
-                [idx,d] = rangesearch(pts,startPts,p.dist*sz); %Get points within dist*time of start pts
-                sz = sz+1;
-                for i = 1:size(idx)
-                    binSynth(idx{i}(d{i}<= p.dist*p.maxsize),time) = 1; %Set points within dist*time of start pts to active
-                    for row = 1:size(binSynth,1)
-                        if sum(binSynth(row,:))>=p.lifetime
-                        binSynth(row,time)=0; %Set cells to inactive if they've been active > lifetime
-                        end
-                    end
-                end
-            end
-            if ~isempty(p.bin) %Use user-provided binary data
-                bin_synth = logical(binSynth+p.bin{well});
-            else
-                bin_synth = logical(binSynth);
-            end
-        end 
-        function bin_synth_xy = gensynth_xy(data,xy,varargin)
+		end
+		%}
+		function out = pulse2bin(pulseAnalysisData,raw_data,channel)
+    		%% Check for XYs with data and get their indicies
+    		xy = 1:numel(pulseAnalysisData);
+    		goodxys = ~cellfun(@isempty,pulseAnalysisData);% check to see if the input xys are good
+    		xy = xy(goodxys);
+    		
+    		%% Loop through XYs
+    		numXYs = numel(xy);
+    		
+    		out = {};
+    		for iwell = 1:numXYs
+        		well = xy(iwell);
+        		%% Store pulse data and coords
+        		pulseData = pulseAnalysisData{well}.data.(channel);
+    		
+        		% Make a data container
+        		dataCont = false(size(raw_data{well}.data.XCoord,1),size(raw_data{well}.data.XCoord,2));
+        		
+                % Assign tracked points as zeros FIX - data is NaN unless real?
+        		%dataCont(~isnan(raw_data{well}.data.XCoord)) = 0;
+    		
+        		%% Loop through pulse data
+        		for i = 1:size(pulseData,1)
+            		if ~isempty(pulseData(i).pkpos)
+                		for ii = 1:size(pulseData(i).pkpos,1)
+                    		%% Get start position and end (from dur of each pulse
+                    		tStart = pulseData(i).pkpos(ii);
+                    		tEnd = tStart + pulseData(i).dur(ii);
+                    		%% Fill in the these points with 1s!
+                    		dataCont(i,tStart:tEnd) = 1;
+                		end
+            		end
+        		end
+        		out{well} = dataCont;
+    		end %XY loop
+		end %convertPulseToBin
+        function bin_synth = gensynth(raw_data,xy,varargin)
             %% Default parameters
             p.numspreads = 7; %How many spreads occur per cycle
             p.freq = 10; %Spread frequency
@@ -162,71 +144,64 @@ classdef arcos_utils
             p.maxsize = 2.8; %Max spread size
             %% Setup
             nin = length(varargin);     %Check for even number of add'l inputs
-            if rem(nin,2) ~= 0
-                warning('Additional inputs must be provided as option-value pairs');  
-            end%Splits pairs to a structure
-            for s = 1:2:nin
-                p.(lower(varargin{s})) = varargin{s+1};   
-            end
+            if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option-value pairs'); end%Splits pairs to a structure
+            for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
             %% Random Number Generator Seed
-            if ~isempty(p.seed) %Use user-provided seed
-                rng(p.seed);
-            end
+			if ~isempty(p.seed)
+				seed = str2double(evalc('disp(p.seed)'));
+				rng(seed)
+			end%Use user-provided seed
             %% Pre-allocate output
-            bin_synth_xy = cell(1,length(xy(1):xy(2)));
+            bin_synth = cell(1,length(xy));
             %% Loop through XYs (wells)
             for iwell = 1:numel(xy)
                 well = xy(iwell);
-                %% Create / Update progress bar
-                if well == xy(1)
-                    bar = waitbar(well/length(xy(1):xy(2)),append('Processing XY ', int2str(well), ' of ', int2str(length(xy(1):xy(2)))));
-                else
-                   waitbar(well/length(xy(1):xy(2)),bar,append('Processing XY ', int2str(well), ' of ', int2str(length(xy(1):xy(2))))); 
-                end
-                %% Assign X and Y Coords from data
-                XCoord = data{well}.data.XCoord;
-                YCoord = data{well}.data.YCoord;
-                %% Pre-allocate logical array
-                binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));
-                %% Loop through spread instances by frequency
-                for r = 1:round(size(binSynth,2)/p.freq)
+                XCoord = raw_data{well}.data.XCoord; % Assign X and Y Coords from data
+                YCoord = raw_data{well}.data.YCoord;
+                binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));  % Pre-allocate logical array
+                %% Generate random start indices
+				for r = 1:round(size(binSynth,2)/p.freq+1)
                     col = r*p.freq-(p.freq-1);
-                    %% Get random start points for the whole time series
-                    for q = 1:p.numspreads %Generate random indices for starting pts
+					for q = 1:p.numspreads %Generate random indices for starting pts
                         istartPts(q,r) = randi(size(XCoord,1)); %#ok<AGROW>
                         binSynth(istartPts(q,r),col) = 1;
-                    end
-                end
+					end
+				end
+				%% Starting parameters
                 cnt = 1;
                 sz = 1;
                 %% Loop through time series
                 for time = 1:size(XCoord,2)
-                    if time==1 || mod(time,p.freq) == 0 && cnt <=size(istartPts,2)
+					movingframe = (time-p.freq:time); %A sliding frame of time indices from the current time back to time-p.lifetime
+					movingframe = movingframe(movingframe>0); %Filter by values > 0
+					if ismember(time,(1:p.freq:size(XCoord,2)))
                         startPts = [XCoord(istartPts(:,cnt),time),YCoord(istartPts(:,cnt),time)]; %Get coords for start pts
                         cnt = cnt+1;
                         sz = 1;
-                    end
-                    %% Set points within radius active
-                    pts = [XCoord(:,time),YCoord(:,time)]; %Get all xy coords at current time
-                    [idx,d] = rangesearch(pts,startPts,p.dist*sz); %Get points within dist*time of start pts
-                    sz = sz+1;
-                    for i = 1:size(idx)
-                        binSynth(idx{i}(d{i}<= p.dist*p.maxsize),time) = 1; %Set points within dist*time of start pts to active
-                        for row = 1:size(binSynth,1)
-                            if sum(binSynth(row,:))>=p.lifetime
-                            binSynth(row,time)=0; %Set cells to inactive if they've been active > lifetime
-                            end
-                        end
-                    end
+					else
+						%% Set points within radius active
+						pts = [XCoord(:,time),YCoord(:,time)]; %Get all xy coords at current time
+						[idx,d] = rangesearch(pts,startPts,p.dist*sz); %Get points within dist*time of start pts
+						sz = sz+1;
+						for i = 1:size(idx)
+							binSynth(idx{i}(d{i}<= p.dist*p.maxsize),time) = 1; %Set points within dist*time of start pts to active
+							for row = 1:size(binSynth,1)
+								if sum(binSynth(row,movingframe))>=p.lifetime+1
+									binSynth(row,time)=0; %Set cells to inactive if they've been active > lifetime
+								end
+							end
+						end
+						%% Set points inactive if they've been alive for p.lifetime (Donut)
+						
+					end
                 end
                 %% Layer real data on top of synthetic
                 if ~isempty(p.bin) %Use user-provided binary data
-                    bin_synth_xy{well} = logical(binSynth+p.bin{well});
+                    bin_synth{well} = logical(binSynth+p.bin{well});
                 else
-                    bin_synth_xy{well} = logical(binSynth);
+                    bin_synth{well} = logical(binSynth);
                 end
             end %end well loop
-            close(bar);
 		end 
 		function out = reformat(cdata)
 			%% Load data into struct
@@ -234,13 +209,17 @@ classdef arcos_utils
 			max_id = cdata(end).newmax;
 			clusters = repmat(struct('cid',[],'data',struct('time',{},'XYCoord',{},'id',{},'numpts',{},'bounds',{},'inactive',{},'area',{},'compl',{},'rocarea',{},'roccount',{}),'t_start',[],'t_end',[],'dur',[], 'maxarea',[],'maxcount',[]),max_id,1); %set up struct of structs
 			for time = 1:timerange
+				eps = cdata(time).eps;
+				minpts = cdata(time).minpts;
 				dtp = cdata(time).tracked; %dtp = data at timepoint
 				for cluster = 1:size(dtp,2)
-					id = mode(dtp(cluster).id(:,2)); %May not need the mode part... compare timeit results with and without mode.
+					id = mode(dtp(cluster).id(:,2));
 					clusters(id).cid = id;
 					clusters(id).data(time).time = time;
 					clusters(id).data(time).XYCoord = dtp(cluster).XYCoord;
 					clusters(id).data(time).id = dtp(cluster).id;
+					clusters(id).data(time).eps = eps;
+					clusters(id).data(time).minpts = minpts;
 				end
 			end
 			%% Loop through substructs and remove empty entries
@@ -257,3 +236,71 @@ classdef arcos_utils
 		end
     end
 end
+%{
+for iChan = 1:NumChans
+    CurChan = ChanNames{iChan}; % get the channel name
+    fprintf('The %s channel will be normalized using %s method. \n', CurChan, inp.normalizetype)
+    
+    NormChan = ['n', CurChan]; % get the normalization channel name
+    dataloc.normalizetype.(NormChan) = inp.normalizetype;
+    MegaDataHolder = []; %This will hold all the data for a second
+    
+    %loop over all the xys and combine them into a mega data
+    for iXY = 1:NumXYs2Norm2
+        tXY = inp.normto(iXY);
+        
+        if ~isempty(dataloc.d{tXY}) %check the XY isn't empty
+        if isfield(dataloc.d{tXY}, 'data') %check the XY has data
+        if isfield(dataloc.d{tXY}.data, CurChan) %check if that XY has the channel in it
+            MegaDataHolder = [MegaDataHolder; dataloc.d{tXY}.data.(CurChan)]; %append all the data!
+        end %if the chan exists
+        end %if data exists
+        end %if dataloc.d is not empty
+        
+    end %end normdata collection loop
+   
+    %now calculate the method of normalization requested
+switch inp.normalizetype
+        case 'znorm' %Z-Score normalize (subtract mean of all data, divide by std dev)
+            MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
+            Subtract = nanmean(MegaDataHolder, 'all'); %get the mean
+            DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
+           
+        case 'minmax' %Min/Max (percentile) normalize (subtract min, divide by diff btwn max and min
+            MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
+            ChanMax = prctile(prctile(MegaDataHolder, inp.normmax,2), inp.normmax); % get the max for normalizing data
+            Subtract = prctile(prctile(MegaDataHolder,inp.normmin,2), inp.normmin); % get the min for normalizing data
+            DivideBy = ChanMax - Subtract; % get the diff for normalizing data
+       
+        case 'minmaxself' %Min/Max (percentile) normalize (subtract min, divide by diff btwn max and min
+        
+        case 'minsub' %If you have a known control set of wells for Min/Max (percentile) normalize (subtract min, divide by diff btwn max and min
+            Subtract = 0; % get the min for normalizing data
+            DivideBy = 1; % divide by 1
+            
+        case {'robust','selfrobust'} %Robust Scalar (scales to median and quantiles)
+            Subtract = nanmedian(MegaDataHolder, 'all'); %get the median
+            Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
+            Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
+            DivideBy = Q75 - Q25; %get the interquantile range
+
+        case {'specialrobust'} %Robust Scalar (scales to median and quantiles)
+            Subtract = nanmedian(MegaDataHolder, 2); %get the median for each cell, to self subtract
+            Quantilz = quantile(MegaDataHolder, (0:0.25:1),2);
+            Q25 = Quantilz(:,2); Q75 = Quantilz(:,4); %get the 25th and 75th quantiles
+            DivideBy = nanmedian(Q75 - Q25); %get the median interquantile range to divide all data by
+
+        case 'controlrobust' %Robust Scalar (scales to median and quantiles) with known control wells
+            MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
+            Subtract = nanmedian(MegaDataHolder, 'all'); %get the median
+            Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
+            Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
+            DivideBy = Q75 - Q25; %get the median interquantile range
+            
+        otherwise %use the default of zscore, but warn them about it
+            fprintf('Normalization method %s given as input not recognized, using Z-Score normalization instead. \n', p.normalize)
+            inp.normalize = 'znorm';
+            Subtract = nanmean(MegaDataHolder, 'all'); %get the mean
+            DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
+    end
+%}
