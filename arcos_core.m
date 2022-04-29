@@ -1,21 +1,22 @@
-function cdata = arcos_core(XCoord,YCoord,bin,varargin)
+function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	p.eps = [];
 	p.minpts = [];
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
 	runPrep = [isempty(p.eps), isempty(p.minpts)];
-    %% Preallocate cdata, initialize newmax
+    %% Preallocate cdata, initialize newmax, preallocate warnings
     newmax = 0;
 	cdata = struct('untracked',{},'tracked',{},'eps',{},'minpts',{},'newmax',{});
+	warnings = struct('too_sparse',{});
 	%% Time loop
     for time = 1:size(XCoord,2)
 		%% Setup: Eps and Minpts
 		if any(runPrep); [epst,minptst] = arcos_utils.prep_dbscan3(XCoord(:,time),YCoord(:,time),bin(:,time)); end
 		if ~runPrep(1);  epst = p.eps;  end  %Override with user-provided eps
 		if ~runPrep(2);  minptst = p.minpts; end  %Override with user-provided minpts
-		if epst >150; warning(append('Epsilon is higher than expected. Eps = ',string(epst),' Time: ',string(time)));end % Warning if epsilon is abnormally high
-		if epst <50; warning(append('Epsilon is lower than expected. Eps = ',string(epst),' Time: ',string(time)));end %Warning if epsilon is abnormally low
+		%% Log warning if eps is abnormal
+		if epst >150; warnings(time).too_sparse = "High Epsilon. Check data for low cell density";end % Warning if epsilon is abnormally high
 		%% Setup and run Clustering
         activeXY = [XCoord(bin(:,time),time), YCoord(bin(:,time),time)]; %XY coordinates for active cells        
         cdata(time).untracked = clustering(activeXY, epst, minptst);
