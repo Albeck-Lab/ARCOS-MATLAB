@@ -10,8 +10,8 @@ function [clust_by_time, clust_by_id, binaries] = arcos(data,xy,ch,varargin)
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1};   end
 	%% Channel prep
 	if ischar(ch); ch = {ch}; end % assert ch is cell
-    if isdouble(p.eps); p.eps = {p.eps}; end %assert eps is cell
-    if isdouble(p.minpts); p.minpts = {p.minpts}; end %assert eps is cell
+    if isnumeric(p.eps); p.eps = {p.eps}; end %assert eps is cell
+    if isnumeric(p.minpts); p.minpts = {p.minpts}; end %assert eps is cell
 
 	%% 
 	if isempty(xy); xy = (1:size(data,2)); end
@@ -50,7 +50,7 @@ function [clust_by_time, clust_by_id, binaries] = arcos(data,xy,ch,varargin)
 		end
 		%% Format and assign eps and minpts (if given)
 		if numel(p.eps) == 1; eps = p.eps{1}; else; eps = p.eps{well}; end 
-		if numel(p.mintps) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
+		if numel(p.minpts) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
 		
         %% Do the arcos functions
         clust_by_time{well} = arcos_core(XCoord,YCoord,bin,'eps',eps,'minpts',minpts);
