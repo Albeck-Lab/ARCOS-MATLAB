@@ -63,11 +63,11 @@ function result = getinput(prompt,options)
 	a = input(prompt,"s");
 	if isempty(a)
 		warning('Answer cannot be empty')
-		getinput(prompt,options)
+		result = getinput(prompt,options);
 	elseif ismember(a,string(options))
 		result = a;
 	else
 		warning(append('Invalid response. Options are ', int2str(options)));
-		getinput(prompt,options)
+		result = getinput(prompt,options);
 	end
 end
