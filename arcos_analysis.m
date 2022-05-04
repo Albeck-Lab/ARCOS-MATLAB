@@ -41,6 +41,8 @@ classdef arcos_analysis
                             end
                             %% Size
                             clusters(i).data(ii).numpts = size(clusters(i).data(ii).XYCoord,1); %How many active points in the cluster
+							%%
+							clusters(i).data(ii).density = clusters(i).data(ii).numpts/clusters(i).data(ii).area; % Cluster density as active cells per 
                         end
                         clusters(i).t_start = clusters(i).data(1).time; %First appearance of cluster
                         clusters(i).t_end = clusters(i).data(end).time; %Last appearance of cluster
