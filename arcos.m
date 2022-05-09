@@ -9,12 +9,10 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs');  end
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1};   end
-	%% Channel prep
-	if ischar(ch); ch = {ch}; end % assert ch is cell
+	%% DBSAN Prep
     if isnumeric(p.eps); p.eps = {p.eps}; end %assert eps is cell
     if isnumeric(p.minpts); p.minpts = {p.minpts}; end %assert eps is cell
-
-	%% 
+	%% XY Prep
 	if isempty(xy); xy = (1:size(data,2)); end
 	%% Preallocate out
 	clust_by_time = cell(1,numel(xy));
@@ -24,6 +22,21 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 	%% Check XYs
 	goodxys = ~arrayfun(@(x)isempty(data{x}.cellindex),xy);% check to see if the input xys are good
 	xy = xy(goodxys);
+	%% Channel prep
+	if ischar(ch); ch = {ch}; end % assert ch is cell
+	if isempty(p.bin_perc) && isempty(p.bin)
+		warning("Optional parameter 'bin_perc' not set. Binarizing data using 80th percentile threshold")
+		p.bin_perc = 80;
+	end
+	if isempty(p.bin)
+		if ~isempty(p.bin_perc)
+			bin = arcos_utils.binarize(data,xy,ch,p.bin_perc); %Use simple binarization if no user-provided binarized data
+		else
+		   error("No binarized data has been provided. To auto-binarize, provide a percentile to threshold. Ex 'bin_perc', 80"); 
+		end
+	else
+		bin = p.bin;
+	end
 	%% Loop through XY
 	numXYs = numel(xy);
     for iwell = 1:numXYs
@@ -41,29 +54,11 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 		if sum_nans/sz*100 > nans_thr
 			warnings(well).excess_nans = sum_nans/sz*100;
 		end
-		%% Channel selection
-		channel = data{well}.data.(ch{1}); %Create wrapper function to loop through desired channels       
-		%% Setup: Binarization
-		if isempty(p.bin_perc) && isempty(p.bin)
-			warning("Optional parameter 'bin_perc' not set. Binarizing data using 80th percentile threshold")
-			p.bin_perc = 80;
-		end
-		if isempty(p.bin)
-			if ~isempty(p.bin_perc)
-				%bin = arcos_utils.binarize(channel,p.bin_perc); %Use simple binarization if no user-provided binarized data
-				error("Automatic binarization is currently offline. Please use arcos_utils.pulse2bin to binarize your data")
-			else
-			   error("No binarized data has been provided, so please specify a percentile threshold to binarize data. Ex 'bin_perc', 80"); 
-			end
-		else
-			bin = p.bin{well}; %Use user-provided binarization
-		end
 		%% Format and assign eps and minpts (if given)
 		if numel(p.eps) == 1; eps = p.eps{1}; else; eps = p.eps{well}; end 
 		if numel(p.minpts) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
-		
         %% Do the arcos functions
-        [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin,'eps',eps,'minpts',minpts);
+        [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts);
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
 		binaries{well} = bin;
     end %well loop

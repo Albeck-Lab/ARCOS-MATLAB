@@ -80,23 +80,26 @@ classdef arcos_utils
             else
                 minpts = k;
             end
-        end
-        %{
-		function [bin,threshold] = binarize(ch,perc)
-            threshold = mean(prctile(ch,perc));
-            bin = ch>threshold;
-        end 
-        function [bin_xy,thr_xy] = binarize_xy(data,ch,xy,perc)
-            bin_xy = cell(1,length(xy));
-            thr_xy = cell(1,length(xy));
-            if ischar(ch); ch = {ch}; end
-            for iw = 1:numel(xy)
-                w = xy(iw);
-                chan = data{w}.data.(ch{1});
-                [bin_xy{w},thr_xy{w}] = arcos_utils.binarize(chan,perc); 
-            end
 		end
-		%}
+		function [bin,threshold] = binarize(raw_data,xy,ch,perc)
+			bin = cell(1,numel(xy));
+			MegaDataHolder = [];
+			%% Loop through wells, append channel data to MegaDataHolder
+			for i = 1:numel(xy)
+				well = xy(i);
+				channel = raw_data{well}.data.(ch{1});
+				MegaDataHolder = vertcat(MegaDataHolder, channel);
+			end
+			%% Get mean percentile of all well's channel data
+			threshold = mean(prctile(MegaDataHolder,perc));
+			%% Loop through wells again and binarize
+			for i = 1:numel(xy)
+				well = xy(i);
+				channel = raw_data{well}.data.(ch{1});
+				
+				bin{well} = channel>threshold;
+			end
+		end 
 		function out = pulse2bin(pulseAnalysisData,raw_data,channel)
     		%% Check for XYs with data and get their indicies
     		xy = 1:numel(pulseAnalysisData);
@@ -234,73 +237,66 @@ classdef arcos_utils
 			end
 			out = clusters;
 		end
+		function out = binarize_robust(raw_data,xy,ctrl,chan,type)
+			numXYs = numel(xy);
+			out = cell(1,numXYs);
+			MegaDataHolder = []; %Array of channel data, vertically concatenated
+			%% Loop over all the xys and combine them into a mega data
+			for iXY = 1:numXYs
+    			tXY = xy(iXY);
+    			if ~isempty(raw_data{tXY}) %check the XY isn't empty
+    			if isfield(raw_data{tXY}, 'data') %check the XY has data
+    			if isfield(raw_data{tXY}.data, chan) %check if that XY has the channel in it
+        			MegaDataHolder = vertcat(MegaDataHolder, raw_data{tXY}.data.(chan)); %#ok<AGROW> %concat to megadataholder
+    			end %if the chan exists
+    			end %if data exists
+    			end %if raw_data is not empty
+			end %end normdata collection loop
+    		%% Calculate the method of normalization requested
+			switch type
+    			case 'znorm' %Z-Score normalize (subtract mean of all data, divide by std dev)
+        			MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
+        			Subtract = mean(MegaDataHolder, 'omitnan'); %get the mean
+        			DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
+    			case {'robust','selfrobust'} %Robust Scalar (scales to median and quantiles)
+        			Subtract = median(MegaDataHolder, 'omitnan'); %get the median
+        			Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
+        			Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
+        			DivideBy = Q75 - Q25; %get the interquantile range
+    			case {'specialrobust'} %Robust Scalar (scales to median and quantiles)
+        			Subtract = median(MegaDataHolder, 2,'omitnan'); %get the median for each cell, to self subtract
+        			Quantilz = quantile(MegaDataHolder, (0:0.25:1),2);
+        			Q25 = Quantilz(:,2); Q75 = Quantilz(:,4); %get the 25th and 75th quantiles
+        			DivideBy = median(Q75 - Q25,'omitnan'); %get the median interquantile range to divide all data by
+    			case {'controlrobust','control'} %Robust Scalar (scales to median and quantiles) with known control wells
+        			MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
+        			Subtract = median(MegaDataHolder, 'omitnan'); %get the median
+        			Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
+        			Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
+        			DivideBy = Q75 - Q25; %get the median interquantile range
+    			otherwise %use the default of zscore, but warn them about it
+        			%fprintf('Normalization method %s given as input not recognized, using Z-Score normalization instead. \n', p.normalize)
+        			type = 'znorm';
+        			Subtract = mean(MegaDataHolder, 'omitnan'); %get the mean
+        			DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
+			end       
+            %% Loop over all the xys again to normalize them
+            for iXY = 1:numXYs
+                tXY = xy(iXY);
+                if ~isempty(raw_data{tXY}) %check the XY isn't empty
+                if isfield(raw_data{tXY}, 'data') %check the XY has data
+                if isfield(raw_data{tXY}.data, chan) %check if that XY has the channel in it
+                    switch type
+                        case 'specialrobust'
+                            Subtract = median(raw_data{tXY}.data.(chan), 2,'omitnan'); %get the median for each cell, to self subtract
+                            out{tXY} = ((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy; %make normalized data
+                        otherwise
+                            out{tXY} = ((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy; %make normalized data
+                    end %end switch
+                end %if the chan exists
+                end %if data exists
+                end %if raw_data is not empty
+            end %end second iXY loop
+		end
     end
 end
-%{
-for iChan = 1:NumChans
-    CurChan = ChanNames{iChan}; % get the channel name
-    fprintf('The %s channel will be normalized using %s method. \n', CurChan, inp.normalizetype)
-    
-    NormChan = ['n', CurChan]; % get the normalization channel name
-    dataloc.normalizetype.(NormChan) = inp.normalizetype;
-    MegaDataHolder = []; %This will hold all the data for a second
-    
-    %loop over all the xys and combine them into a mega data
-    for iXY = 1:NumXYs2Norm2
-        tXY = inp.normto(iXY);
-        
-        if ~isempty(dataloc.d{tXY}) %check the XY isn't empty
-        if isfield(dataloc.d{tXY}, 'data') %check the XY has data
-        if isfield(dataloc.d{tXY}.data, CurChan) %check if that XY has the channel in it
-            MegaDataHolder = [MegaDataHolder; dataloc.d{tXY}.data.(CurChan)]; %append all the data!
-        end %if the chan exists
-        end %if data exists
-        end %if dataloc.d is not empty
-        
-    end %end normdata collection loop
-   
-    %now calculate the method of normalization requested
-switch inp.normalizetype
-        case 'znorm' %Z-Score normalize (subtract mean of all data, divide by std dev)
-            MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
-            Subtract = nanmean(MegaDataHolder, 'all'); %get the mean
-            DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
-           
-        case 'minmax' %Min/Max (percentile) normalize (subtract min, divide by diff btwn max and min
-            MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
-            ChanMax = prctile(prctile(MegaDataHolder, inp.normmax,2), inp.normmax); % get the max for normalizing data
-            Subtract = prctile(prctile(MegaDataHolder,inp.normmin,2), inp.normmin); % get the min for normalizing data
-            DivideBy = ChanMax - Subtract; % get the diff for normalizing data
-       
-        case 'minmaxself' %Min/Max (percentile) normalize (subtract min, divide by diff btwn max and min
-        
-        case 'minsub' %If you have a known control set of wells for Min/Max (percentile) normalize (subtract min, divide by diff btwn max and min
-            Subtract = 0; % get the min for normalizing data
-            DivideBy = 1; % divide by 1
-            
-        case {'robust','selfrobust'} %Robust Scalar (scales to median and quantiles)
-            Subtract = nanmedian(MegaDataHolder, 'all'); %get the median
-            Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
-            Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
-            DivideBy = Q75 - Q25; %get the interquantile range
-
-        case {'specialrobust'} %Robust Scalar (scales to median and quantiles)
-            Subtract = nanmedian(MegaDataHolder, 2); %get the median for each cell, to self subtract
-            Quantilz = quantile(MegaDataHolder, (0:0.25:1),2);
-            Q25 = Quantilz(:,2); Q75 = Quantilz(:,4); %get the 25th and 75th quantiles
-            DivideBy = nanmedian(Q75 - Q25); %get the median interquantile range to divide all data by
-
-        case 'controlrobust' %Robust Scalar (scales to median and quantiles) with known control wells
-            MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
-            Subtract = nanmedian(MegaDataHolder, 'all'); %get the median
-            Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
-            Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
-            DivideBy = Q75 - Q25; %get the median interquantile range
-            
-        otherwise %use the default of zscore, but warn them about it
-            fprintf('Normalization method %s given as input not recognized, using Z-Score normalization instead. \n', p.normalize)
-            inp.normalize = 'znorm';
-            Subtract = nanmean(MegaDataHolder, 'all'); %get the mean
-            DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
-    end
-%}
