@@ -237,13 +237,16 @@ classdef arcos_utils
 			end
 			out = clusters;
 		end
-		function out = binarize_robust(raw_data,xy,ctrl,chan,type)
-			numXYs = numel(xy);
-			out = cell(1,numXYs);
+		function out = binarize_robust(raw_data,xy,ctrl,chan,type,perc)
 			MegaDataHolder = []; %Array of channel data, vertically concatenated
+			if perc > 200 || perc < 0; error('Perc should be a percentage <200, ex 85'); end
+			perc = perc/100;
 			%% Loop over all the xys and combine them into a mega data
-			for iXY = 1:numXYs
-    			tXY = xy(iXY);
+			% This loop defined by xys or control wells you specify
+			if isempty(ctrl); xy2bin = xy; else; xy2bin = ctrl; end
+			numXY2bin = numel(xy2bin);
+			for iXY = 1:numXY2bin
+    			tXY = xy2bin(iXY);
     			if ~isempty(raw_data{tXY}) %check the XY isn't empty
     			if isfield(raw_data{tXY}, 'data') %check the XY has data
     			if isfield(raw_data{tXY}.data, chan) %check if that XY has the channel in it
@@ -268,12 +271,6 @@ classdef arcos_utils
         			Quantilz = quantile(MegaDataHolder, (0:0.25:1),2);
         			Q25 = Quantilz(:,2); Q75 = Quantilz(:,4); %get the 25th and 75th quantiles
         			DivideBy = median(Q75 - Q25,'omitnan'); %get the median interquantile range to divide all data by
-    			case {'controlrobust','control'} %Robust Scalar (scales to median and quantiles) with known control wells
-        			MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
-        			Subtract = median(MegaDataHolder, 'omitnan'); %get the median
-        			Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
-        			Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
-        			DivideBy = Q75 - Q25; %get the median interquantile range
     			otherwise %use the default of zscore, but warn them about it
         			%fprintf('Normalization method %s given as input not recognized, using Z-Score normalization instead. \n', p.normalize)
         			type = 'znorm';
@@ -281,6 +278,8 @@ classdef arcos_utils
         			DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
 			end       
             %% Loop over all the xys again to normalize them
+			numXYs = numel(xy);
+			out = cell(1,numXYs);
             for iXY = 1:numXYs
                 tXY = xy(iXY);
                 if ~isempty(raw_data{tXY}) %check the XY isn't empty
@@ -289,10 +288,12 @@ classdef arcos_utils
                     switch type
                         case 'specialrobust'
                             Subtract = median(raw_data{tXY}.data.(chan), 2,'omitnan'); %get the median for each cell, to self subtract
-                            out{tXY} = ((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy; %make normalized data
+                            out{tXY} = (((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy) > DivideBy*perc; %make normalized data
                         otherwise
-                            out{tXY} = ((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy; %make normalized data
+                            out{tXY} = (((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy) > DivideBy*perc; %make normalized data
                     end %end switch
+					%mean or median of DivideBy value (divide it by 2),
+					% use that number to threshold.
                 end %if the chan exists
                 end %if data exists
                 end %if raw_data is not empty

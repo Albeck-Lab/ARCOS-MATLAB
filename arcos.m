@@ -60,7 +60,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
         %% Do the arcos functions
         [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts);
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
-		binaries{well} = bin;
+		binaries = bin;
     end %well loop
 end %wrapper function end
 		
