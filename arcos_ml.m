@@ -28,34 +28,11 @@ classdef arcos_ml
 						set(gca,'ydir','reverse') %Reverse Y axis (image origin is top left)
 						shg
 						c = getinput(prompt,[1,2]);
-						clust_by_id{well}(clust).data(time).(user{1}) = str2num(c);
+						clust_by_id{well}(clust).data(time).(user{1}) = str2num(c); %#ok<ST2NM> 
 					end
 				end
 			end
 			close(gcf)
-			out = clust_by_id;
-		end
-		function out = dunkin(clust_by_id) 
-			c = clust_by_id; %Create alias 
-			for i = 1:size(c,2)
-				for ii = 1:size(c{i},1)
-					clust = c{i}(ii).data; %Store cluster data
-					first = clust(1).XYCoord; %Get coords for first timepoint
-					cent = mean(first); %Calculate centroid
-					for iii = 1:size(clust,2)
-						pts_on = clust(iii).XYCoord; %Active points
-						pts_on(:,3) = 1; %Flag on
-						pts_off = clust(iii).inactive; %Inactive points
-						pts_off(:,3) = 0; %Flag off
-						pts = vertcat(pts_on,pts_off); %Combine on and off
-						%Insert a conditional here to change K
-						idx = knnsearch(pts(:,1:2),cent,'K',10); %Search for centroids K neighbors in pts 
-						neighbors = pts(idx,:);
-						n_off = sum(neighbors(:,3)==0); %Number of neighbors that are inactive
-						clust_by_id{i}(ii).data(iii).donutness = n_off; %Store it
-					end
-				end
-			end
 			out = clust_by_id;
 		end
 		function out = tabulate(clust_by_id,fields_to_remove)
