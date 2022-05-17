@@ -1,3 +1,30 @@
+%% ARCOS
+% ARCOS, or Automated Recognition of Collective Signaling is a MATLAB-based
+% adaptation and expansion of Maciej Dobrzynski's <https://github.com/dmattek/ARCOS R Package> of the same name.
+% 
+% 
+%% Inputs
+% * *data* - |cell| - The data to be processed. Each cell is a well/xy.
+% Well data must be an array of doubles, formatted such that rows are cells (observations) and
+% columns are timepoints.
+% * *xy* - |array| - Array of well indices (integers) to process. Can handle
+% discontinuous indices. Ex: (1:5, 11:15)
+% * *ch* - |char| - The identifier of the channel to process. Ex: 'nEKAR'.
+% Must be a 'character', not a "string". 
+% * _varargin_ - |option value pairs| - accepts optional inputs as option-value pairs.
+%%% Optional Inputs
+% * *bin* - |cell| - User-provided binarized data. Each cell is well/xy binary data as logical arrays. Rows are cells (observations) and columns are timepoints. *Default: []*
+% * *bin_perc* - |Double|- If auto-binarizing. the percentile by which to threshold and binarize the data. *Default: []*
+% * *eps* - |cell| - User-provided epsilon values for dbscan. *Default: []*
+% * *minpts* - |cell|- User-provided minpts values for dbscan. *Default: []*
+% * *debug* - |Logical|, |Boolean| - Enable debug logging. *Default: false*
+%% Outputs
+% * *clust_by_time* - |cell| - Clusters organized by timepoint
+% * *clust_by_id* - |cell| - Clusters organized by cluster ID
+% * *binaries* - |cell| - Binarization data used to cluster
+% * *warnings* - |cell| - Warnings that can indicate poor clustering
+%% Examples
+% See the Demos folder for a variety of examples
 function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,varargin)
 	%% Optional Parameters
 	p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
@@ -57,14 +84,13 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 		%% Format and assign eps and minpts (if given)
 		if numel(p.eps) == 1; eps = p.eps{1}; else; eps = p.eps{well}; end 
 		if numel(p.minpts) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
-        %% Do the arcos functions
+        %%Do the arcos functions
         [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts);
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
 		binaries = bin;
     end %well loop
 end %wrapper function end
 		
-
 
 
 
