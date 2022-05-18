@@ -1,27 +1,73 @@
+%% ARCOS Analysis
+% A set of methods for analyzing and filtering ARCOS data
+%
+%% arcos_analysis.analyze
+% Performs a number of analyses on the ARCOS cluster data
+%
+% *Inputs*
+%
+% * *clust_by_id* - |cell| - The clust_by_id cell array output from ARCOS
+% * *raw_data* - |cell| - The data previously fed into ARCOS
+%
+% *Outputs*
+%
+% * *out* - |cell| - A copy of clust_by_id but with the analysis fields
+% populated with analysis data
+%% arcos_analysis.dunkin
+% Secondary analysis that yields a "donutness" score for clusters. 
+% Must be performed _after_ arcos_analysis.analyze
+%
+% *Inputs*
+%
+% * *clust_by_id* - |cell| - The clust_by_id cell array output from
+% arcos_analysis.analyze
+%
+% *Outputs*
+%
+% * *out* - |cell| - A copy of clust_by_id but with the donutness field
+% populated with donutness scores.
+%% arcos_analysis.filter
+% Method to filter analysis results
+%
+% *Inputs*
+%
+% * *clust_by_id* - |cell| - The clust_by_id cell array output from
+% arcos_analysis.analyze or arcos_analysis.dunkin
+% * *fts* - |struct| - Filter parameters.
+%
+% *Optional Inputs*
+%
+% * *xy* |array| - Indices of XYs/wells to filter. Can be discontinuous. Ex (1:5,10:20)  
+%
+% *Outputs*
+%
+% *out* - |struct| - A copy of clust_by_id with specified filters applied.
+%% Examples
+% Look in the Demos folder for a variety of examples
 classdef arcos_analysis
     methods(Static)
         function out = analyze(clust_by_id,raw_data)
-            %% Check for XYs with data and get their indicies
+            %%Check for XYs with data and get their indicies
             xy = 1:numel(clust_by_id);
             goodxys = ~cellfun(@isempty,clust_by_id);% check to see if the input xys are good
             xy = xy(goodxys);
-            %% Loop through XYs
+            %%Loop through XYs
             numXYs = numel(xy);
             for iwell = 1:numXYs
                 well = xy(iwell);
-                %% Store clusters and coords
+                %%Store clusters and coords
                 clusters = clust_by_id{well}; %fixed - change this for new input structure (single row cell array)
                 XCoord = raw_data{well}.data.XCoord;
                 YCoord = raw_data{well}.data.YCoord;
-                %% Loop through clusters
+                %%Loop through clusters
                 for i = 1:size(clusters,1)
                     if size(clusters(i).data,2)>0
                         for ii = 1:size(clusters(i).data,2)
-                            %% Boundary
+                            %%Boundary
                             [bounds,area] = boundary(clusters(i).data(ii).XYCoord);
                             clusters(i).data(ii).bounds = bounds;
                             clusters(i).data(ii).area = area;
-                            %% Completion
+                            %%Completion
                             xq = XCoord(:,clusters(i).data(ii).time); %Query points x values (all x coords for time)
                             yq = YCoord(:,clusters(i).data(ii).time); %Query points y values (all y coords for time)
                             xv = clusters(i).data(ii).XYCoord(clusters(i).data(ii).bounds,1); %Polygon x values
@@ -31,7 +77,7 @@ classdef arcos_analysis
                             nactive = size(clusters(i).data(ii).XYCoord,1);
                             nall = sum(all);
                             clusters(i).data(ii).compl = nactive/nall; %Inf where no boundary can be drawn
-                            %% Inactive points in bounds
+                            %%Inactive points in bounds
                             if nactive/nall ~= 1 || nactive/nall ~= Inf %Skip if all cells within bounds are active or ratio is inf
                                 xy_all = [XCoord(all,clusters(i).data(ii).time),YCoord(all,clusters(i).data(ii).time)]; %X and Y Coords for all points within and on the bounds
                                 active = clusters(i).data(ii).XYCoord; %Active cells within the bounds
@@ -39,10 +85,10 @@ classdef arcos_analysis
                                 lmap = logical(lmap(:,1) + lmap(:,2)); %Collapsed 1D logical array
                                 clusters(i).data(ii).inactive = [xy_all(lmap,1),xy_all(lmap,2)]; %X and Y coordinates of inactive cells
                             end
-                            %% Size
+                            %%Size
                             clusters(i).data(ii).numpts = size(clusters(i).data(ii).XYCoord,1); %How many active points in the cluster
-							%%
-							clusters(i).data(ii).density = clusters(i).data(ii).numpts/clusters(i).data(ii).area; % Cluster density as active cells per 
+							%%Density
+							clusters(i).data(ii).density = clusters(i).data(ii).numpts/clusters(i).data(ii).area; 
                         end
                         clusters(i).t_start = clusters(i).data(1).time; %First appearance of cluster
                         clusters(i).t_end = clusters(i).data(end).time; %Last appearance of cluster
@@ -97,10 +143,10 @@ classdef arcos_analysis
             % this would filter and keep all the data where the spread
             % lasts at least 5 tps. 
             
-            %% Default params
+            %%Default params
             p.xy = []; %which xys to process (if left empty it will do all)
            
-            %% Process additional inputs
+            %%Process additional inputs
             nin = length(varargin);    
             if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %Check for even number of add'l inputs
             for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end %Splits pairs to a structure
@@ -142,7 +188,7 @@ classdef arcos_analysis
             
             %Tell us once if we need to pull and run a function from the filter list above (fNames)
             functLog = ~arrayfun(@(x)isempty(fNames{x,2}),cell2mat(trueFts));
-            %% Loop over all the data and see what you want to keep
+            %%Loop over all the data and see what you want to keep
             for iXY = 1:numel(XYnums)
                 tXY = XYnums(iXY);
                 keepThese = false(size(clust_by_id{tXY},1),nFts); % set up the logicals for the filers

@@ -1,3 +1,83 @@
+%% ARCOS Core
+% The core clustering functions of ARCOS
+% 
+%% ARCOS_Core
+%
+% *Inputs*
+%
+% * *XCoord* - |Double array| - X coordinates of tracked cells
+% * *YCoord* - |Double array| - Y coordinates of tracked cells
+% * *bin* - |Logical array| - binary data
+% * *_varargin_* - |Option-value pairs| - Accepts optional inputs as
+% option-value pairs. Ex: 'eps', 60
+%
+% *Optional Inputs*
+%
+% * *eps* - |Double| - Optional epsilon value for DBSCAN. Automatically
+% calculated if left empty.
+% * *minpts* - |Integer| - Optional minpts value for DBSCAN. Automatically
+% calculated if left empty.
+%
+% *Outputs*
+%
+% * *cdata* - |struct| - Cluster data organized by time
+% * *warnings* - |Table| - Warnings indicating where poor clustering may
+% have occurred
+%
+%% Clustering
+% Clustering of active cells via DBSCAN
+%
+% *Inputs*
+%
+% * *activeXY* - |Double array| - X and Y coordinates for active cells
+% * *eps* - |Double| - Epsilon value for DBSCAN
+% * *minpts* - |Integer| - Minpts value for DBSCAN
+%
+% *Ouputs*
+%
+% * *out* - |Struct| - struct containing XY coordinates of clustered cells
+% and their cluster IDs
+%
+%
+%% Tracking
+% Tracking method that reassigns cluster IDs based on knnsearch
+%
+% *Inputs*
+%
+% * *sCurr* - |Struct| - Struct containing the currently indexed untracked
+% cluster data
+% * *sPrev* - |Struct| - Struct containing the previously indexed tracked
+% cluster data
+% * *bPrev* - |Struct| - Struct containing the previously indexed untracked
+% cluster data
+% * *eps* - |Double| - Epsilon value used to cluster the currently indexed
+% data. Used in knnsearch algorithm
+% * *newmax* - |Integer| - Max cluster ID assigned in the _previous_ tracking
+% iteration
+%
+% *Outputs*
+%
+% * *tracks* - |Struct| - Structure containing XY coordinates, cluster ID
+% lineage and a flag indicating whether a cluster reassignment is unique
+% * *newmax* - |Integer| - Max cluster ID assigned in the _current_ tracking
+% iteration
+%
+%% Unpack
+% Helper function to unpack structs into arrays.
+%
+% *Inputs*
+%
+% * *d* - |Struct| - Struct to be unpacked into an array
+%
+% *Outputs*
+%
+% * *xy* - |Array| - Array of X and Y coordinates unpacked from the
+% inputted struct
+%
+%% Examples
+% See "core_only.mlx" in the Demos folder to use ARCOS Core by itself
+%
+% Otherwise, see default_params.mlx in the Demos folder.
 function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	p.eps = [];
 	p.minpts = [];
@@ -5,22 +85,22 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
 	runPrep = [isempty(p.eps), isempty(p.minpts)];
-    %% Preallocate cdata, initialize newmax, preallocate warnings
+    %%Preallocate cdata, initialize newmax, preallocate warnings
     newmax = 0;
 	cdata = struct('untracked',{},'tracked',{},'eps',{},'minpts',{},'newmax',{});
 	warnings = struct('too_sparse',{});
-	%% Time loop
+	%%Time loop
     for time = 1:size(XCoord,2)
-		%% Setup: Eps and Minpts
+		%%Setup: Eps and Minpts
 		if any(runPrep); [epst,minptst] = arcos_utils.prep_dbscan3(XCoord(:,time),YCoord(:,time),bin(:,time)); end
 		if ~runPrep(1);  epst = p.eps;  end  %Override with user-provided eps
 		if ~runPrep(2);  minptst = p.minpts; end  %Override with user-provided minpts
-		%% Log warning if eps is abnormal
+		%%Log warning if eps is abnormal
 		if epst >150; warnings(time).too_sparse = "High Epsilon. Check data for low cell density";end % Warning if epsilon is abnormally high
-		%% Setup and run Clustering
+		%%Setup and run Clustering
         activeXY = [XCoord(bin(:,time),time), YCoord(bin(:,time),time)]; %XY coordinates for active cells        
         cdata(time).untracked = clustering(activeXY, epst, minptst);
-        %% Track if possible
+        %%Track if possible
 		if time==1
             [cdata(time).tracked,newmax] = tracking(cdata(time).untracked,cdata(time).untracked,cdata(time).untracked,epst,cdata(time).untracked(end).id);
         elseif cdata(time).untracked(end).id==0
@@ -45,18 +125,11 @@ function out = clustering(activeXY, eps, minpts)
         out(cl).id = cl; %cluster identity
     end
 end %clustering end
-function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
-	%% Input explanations
-	%sCurr = struct with current frame's untracked data
-	%sPrev = struct with previous frame's tracked data
-	%bPrev = struct with previous frame's untracked data for backup
-	%eps = epsilon value for knnsearch
-	%newmax = new maximum cluster id assignment 
-	
-    %% Unpack structs into arrays
+function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)	
+    %%Unpack structs into arrays
     dCurr = unpack(sCurr); %XY and ID for clusters in curr
     dPrev = unpack(sPrev); %XY and ID for clusters in prev
-    %% Check if the requisite data is present
+    %%Check if the requisite data is present
     if numel(dPrev)<=3 
         dPrev = unpack(bPrev);
     end
@@ -64,7 +137,7 @@ function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
         tracks = []; %If no data, return empty
         return
     end
-    %% Search neighbors and reassign
+    %%Search neighbors and reassign
     [idx,d] = knnsearch(dPrev(:,1:2),dCurr(:,1:2)); %Indices and distances of current's neighbors in previous
     isClose = d <= eps;
     dCurr(isClose,4)= dPrev(idx(isClose),3);
@@ -85,7 +158,7 @@ function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
             dCurr(cluster,5) = 1;
         end
     end
-    %% Format and output new cluster assignments
+    %%Format and output new cluster assignments
     for i = 1:max(dCurr(:,4))
         newclust = dCurr(:,4)==i;
         tracks(i).XYCoord = dCurr(newclust,1:2);  %#ok<AGROW> %Points that make up the cluster
@@ -96,7 +169,7 @@ function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
             tracks(i).new = 0; %#ok<AGROW>
         end
     end
-    %% Remove empty entries
+    %%Remove empty entries
     map = false(1,size(tracks,2));
     for i = 1:size(tracks,2)
         if isempty(tracks(i).XYCoord) || isempty(tracks(i).id)
@@ -124,4 +197,4 @@ end %unpack function end
 
 
 
-%% Check tracking flag for new cluster assignments
+%%Check tracking flag for new cluster assignments

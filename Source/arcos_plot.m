@@ -1,14 +1,84 @@
+%% ARCOS Plot
+% Class with methods for plotting cluster activity.
+% 
+%% Plot
+% Plots collective activity in red and displays boundaries for visualization
+% of clustering. Plots are saved as .png files in the current working
+% directory or in the user-specified output path using 'outpath', 'path'
+%
+% *Inputs*
+%
+% * *clust_by_time - |Cell| - The clust_by_time cell array output of ARCOS
+% * *clust_by_id* - |Cell| - The clust_by_id cell array output of ARCOS
+% * *binarized_data* - |Cell| - The binarized data cell array output of
+% ARCOS
+% * *raw_data* - |Cell| - The raw_data cell array input of ARCOS
+% * *xy* - |Array| - An array of XY/well indices to plot. Can be
+% discontinuous Ex (1:5, 7:15)
+% * *t* - |Array| - An array of timepoints to plot. Can be discontinuous Ex
+% (1:5, 7:15)
+% * _varargin_ - |Option-value pair| - Accepts additional inputs as
+% option-value pairs. Ex 'usebin',true
+%
+% *Optional inputs*
+%
+% * *usebin* - |Boolean|, |Logical| - Flag to use binarized data for
+% visualizing active unclustered cells. *Default value: true*
+% * *usebounds* - |Boolean|, |Logical| - Flag to plot boundaries
+% encompassing clusters. *Default value: true*
+% * *tracked* - |Boolean|, |Logical| - Flag to plot tracked (true) and
+% untracked (false) clusters. *Default value: true*
+% * *outpath* - |String|, |Char| - Path to desired output directory.
+% *Default value: pwd (current working directory)*
+% * *gif* - |Boolean|, |Logical| - Flag to create animated gif from the
+% saved plot images. *Default value: false*
+% * *bin_real* - |Boolean|, |Logical| - If using synthetic data from
+% arcos_utils layered onto real binary data (see arcos_utils.gensynth), supplying
+% the real data here and it will be colored differently. *Default value:
+% []*
+%
+%% GIF
+% Method for loading images into an animated gif.
+%
+% *Inputs*
+%
+% * *path - |String|, |Char| - Path to the directory containing the images
+% you wish to animate. Images will be loaded in alpha-numeric order. This
+% will also serve as the output folder for the finished gif.
+% * *name* - |String|, |Char| - Desired name for the gif file. Must contain
+% legal characters only. Do not include the file extension in the name. Ex:
+% 'my_gif'. 
+%
+%% GIF SBS (Side-by-side)
+% Method for creating gifs for side-by-side comparison. Useful for
+% validating clustering, tracking, filtering, etc. 
+%
+% Images in both directories _must_ be the same resolution, ex 640x480 == 640x480.
+%  If dimensions are not equal it will break, ex 640x480 ~= 640x640.
+%
+% There _must_ be the same number of images in both directories. 
+% 
+% *Inputs*
+%
+% * *path1* - |String|, |Char| - Path to first directory (will appear on
+% the left).
+% * *path2* - |String|, |Char| - Path to the second directory (will appear
+% on the right). 
+% * *name* - |String|, |Char| - Desired name for the gif file. Must contain
+% legal characters only. Do not include the file extension in the name. Ex:
+% 'my_gif'.
+%
 classdef arcos_plot
     methods(Static)
         function plot(clust_by_time,clust_by_id,binarized_data,raw_data,xy,t,varargin)
-            %% Optional parameters
+            %%Optional parameters
             p.usebin = true; %Flag to use binarized data for visualizing active cells
             p.usebounds = true;
             p.tracked = true; %Flag to plot tracked clusters or untracked clusters
             p.outpath = pwd;
             p.gif = false; %Flag to output images to gif
             p.bin_real = []; %If using synthetic data + real data, supply real data here and it'll be colored differently
-            %% Prep varargin structure
+            %%Prep varargin structure
             nin = length(varargin);     %Check for even number of add'l inputs
             if rem(nin,2) ~= 0
                 warning('Additional inputs must be provided as option, value pairs');  
@@ -21,14 +91,14 @@ classdef arcos_plot
                     error('No bounds detected in data. Have you run analysis yet?')
                 end
             end
-            %% Set up environment
+            %%Set up environment
             mkdir(p.outpath); %Make outpath if it doesn't exist
             fh = figure(); %Figure handle
             set(fh,'WindowStyle','Normal') %Set figure window behavior
             set(fh,'Resize','off') %Lock figure dimensions
             warning("Do not close the figure until the process has finished");
 			warning('off','MATLAB:legend:IgnoringExtraEntries');
-            %% Loop through XY
+            %%Loop through XY
             for iwell = 1:numel(xy)
 				well = xy(iwell);
                 mkdir(append(p.outpath,'\XY ',int2str(well))); %Make output directory
@@ -38,7 +108,7 @@ classdef arcos_plot
                 rXCoord = rwell_data.XCoord; %XCoords for all points, indexed well
                 rYCoord = rwell_data.YCoord; %YCoords for all points, indexed well
                 binw = binarized_data{well};
-                %% Loop through time
+                %%Loop through time
                 for itime = 1:numel(t)
 					time = t(itime);
 					if p.tracked == true
@@ -95,7 +165,7 @@ classdef arcos_plot
                     saveas(image,append(p.outpath,'/','XY ',int2str(well),'/',sprintf('%04d',time), '.png'))
                 end
                 close gcf
-                %% Prepare GIF if specified
+                %%Prepare GIF if specified
                 if p.gif == true
                     arcos_plot.gif(p.outpath,'GIF');
                 end
@@ -141,7 +211,6 @@ classdef arcos_plot
             close gcf
             disp(append('GIF Assembly complete. File saved in ',path1))
 		end
-		
     end 
 end
 

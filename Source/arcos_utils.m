@@ -1,3 +1,99 @@
+%% ARCOS Utils (Utilities)
+% Class with various static utility functions
+%
+%% formatR
+% Method for formatting data such that it can be read by the R version of
+% ARCOS. Outputs a csv (comma separated value) file.
+%
+% *Inputs*
+%
+% * *filename* - |String|, |Char| - Desired output csv file name. Must
+% contain legal characters only. Do not include the file extension in the
+% name.
+% * *XCoord* - |Array| - An array of doubles containing the X coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints. 
+% * *YCoord* - |Array| - An array of doubles containing the Y coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints. 
+% * *bin* - |Array| - A logical array indicating active and inactive cells.
+% Must be organized such that rows are individual
+% tracked cells and columns are timepoints.
+%
+% *Output* 
+% 
+% * *out* - |Table| - A table formatted to be read by the R version of
+% ARCOS. This will be saved to the workspace, but the csv file will be
+% saved to the current working directoy unless a full path is given for the
+% filename.
+%% prep_dbscan
+% Method for determining optimal epsilon and minpts values for DBSCAN.
+%
+% This method assumes that the optimal epsilon value is at the "elbow" or
+% "knee" of the graph of k-nearest-neighbors distances for all datapoints.
+%
+% This method supplies epsilon and minpts values for a single microscope
+% field at a single timepoint. 
+%
+% This method first asserts minpts = 2*dim where dim is the dimensionality of the
+% data.
+% 
+% Next, it calculates the distances to the k-nearest neighbors where k =
+% minpts, takes the maximum distances, scales them, applies gaussian
+% smoothing and takes the first derivative. 
+% 
+% The ideal epsilon is the first point whose tangent line has a slope of 1.
+% 
+% *Inputs*
+%
+% * *XCoord* - |Array| - An array of doubles containing the X coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints.
+% * *YCoord* - |Array| - An array of doubles containing the Y coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints. 
+%
+% *Outputs*
+%
+% * *eps* - |Double| - The epsilon parameter of DBSCAN.
+% * *minpts* - |Integer| - The minpts parameter of DBSCAN.
+%% prep_dbscan2
+% A method for determining optimal epsilon and minpts values for DBSCAN.
+%
+% This method first asserts minpts = 2*dim where dim is the dimensionality of the
+% data.
+%
+% This method averages the epsilon values calculated for all timepoints so
+% as to approximate a "blanket" epsilon that can be used across all
+% timepoints for the given well/XY. 
+%
+% It is designed to be controlled via an external for loop.
+% 
+% Otherwise it is functionally identical
+% to prep_dbscan. See prep_dbscan for more information.
+%
+% *Inputs*
+%
+% * *XCoord* - |Array| - An array of doubles containing the X coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints.
+% * *YCoord* - |Array| - An array of doubles containing the Y coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints. 
+% * time* - |Integer| - The currently indexed timepoint in the for loop. 
+%
+% *Outputs*
+%
+% * *eps* - |Double| - The average of calculated epsilons for this xy/well.
+% * *minpts* - |Integer| - The minpts parameter of DBSCAN.
+%% prep_dbscan3
+% A method for determining optimal epsilon and minpts values for DBSCAN.
+%
+%% binarize
+%% pulse2bin
+%% gensynth
+%% reformat
+%% binarize_robust
 classdef arcos_utils
     methods(Static)
 		function out = formatr(filename,XCoord,YCoord,bin)
@@ -38,7 +134,7 @@ classdef arcos_utils
             scaled = max_d * length(max_d)/max(max_d); %Scale the data
             smoothed = smoothdata(scaled,'gaussian'); %Smooth it
             slopes = gradient(smoothed); %Take first derivative
-            [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
+            [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
             eps = max_d(ix);
         end 
         function [eps,minpts] = prep_dbscan2(XCoord, YCoord, time)
@@ -47,12 +143,12 @@ classdef arcos_utils
             for it = 1:numel(time)
                 t = time(it);
                 [~,d] = knnsearch([XCoord(:,t),YCoord(:,t)], [XCoord(:,t), YCoord(:,t)],'K', minpts+1); %k-nearest neighbors search
-                d = max(d,[],2); %Biased toward greater distances as opposed to average of k-nearest
+                d = max(d,[],2); %Biased toward greater distances of k-nearest
                 max_d = sort(d);
                 scaled = max_d * length(max_d)/max(max_d); %Scale the data
                 smoothed = smoothdata(scaled,'gaussian'); %Smooth it
                 slopes = gradient(smoothed); %Take first derivative
-                [~,ix]=min(abs(slopes-1)); %Get the index of avg_d for ideal eps (where slope of line tangent to that point is 1);
+                [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
                 eps = max_d(ix); %Set epsilon to the value of max_d at index ix
                 vals(it) = eps; %Store eps in vals
             end
