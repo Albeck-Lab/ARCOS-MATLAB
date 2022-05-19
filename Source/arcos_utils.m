@@ -89,11 +89,151 @@
 %% prep_dbscan3
 % A method for determining optimal epsilon and minpts values for DBSCAN.
 %
+% This method increases minpts when data points are densely distributed or noisey and
+% lowers minpts when they are sparsely distributed. 
+%
+% To ensure that DBSCAN runs as expected, minpts has a lower cap of 3.
+% Minpts values < 3 
+%
+% Epsilon is calculated as the median of k-nearest neighbors distances
+% where k = 11. 
+%
+% *Inputs*
+%
+% * *XCoord* - |Array| - An array of doubles containing the X coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints.
+% * *YCoord* - |Array| - An array of doubles containing the Y coordinates
+% for tracked cells. Must be organized such that rows are individual
+% tracked cells and columns are timepoints. 
+% * *bin* - |Logical array| - A logical array representing the binarized
+% channel data for the currently indexed well/xy (1 = active, 0 =
+% inactive). 
+%
+% *Ouputs*
+%
+% * *eps* - |Double| - The epsilon parameter of DBSCAN.
+% * *minpts* - |Integer| - The minpts parameter of DBSCAN.
 %% binarize
+% Method for binarizing channel data using a simple percentile threshold.
+% Channel data for all xys/wells are loaded into memory and the specified
+% percentile of the data is used to threshold and binarize.
+%
+% *Inputs*
+%
+% * *raw_data* - |Cell| - Cell array containing processed data. Ex
+% dataloc.d 
+% * *xy* - |Array| - An array of integers representing indices of wells/xys
+% to process. Supports discontinuous ranges - Ex (1:5, 10:20)
+% * *ch* - |String|, |Char| - The name of the channel to process - Ex
+% 'nEKAR'.
+% * *perc* - |Double|, |Integer| - The percentile of the data by which it will be
+% thresholded. 
+%
+% *Outputs*
+%
+% * *bin* - |Cell| - A cell array where each cell is binary data for the
+% indexed well/xy. 
+% * *threshold* - |Double| - The value by which the channel data are
+% thresholded. Signals above this value are considered "on", signals below
+% are "off". 
 %% pulse2bin
+% Method of binarizing pulse analysis data.
+%
+% *Inputs*
+%
+% * *pulseAnalysisData* - |Unknown| - Pulse analysis data. Ask Nick DeCuzzi for
+% clarification.
+% * *raw_data* - |Cell| - Cell array containing processed data. Ex
+% dataloc.d 
+% * *channel* - |String|, |Char| - The channel to binarize
+%
+% *Outputs*
+%
+% *out* - |Cell| - Cell array where each cell is binarized data for the
+% indexed well/xy. 
 %% gensynth
+% Method to create artificial collective activity for process validation
+% and demonstration.
+%
+% This method uses X and Y coordinates from real data and layers synthetic activity
+% onto those points.
+%
+% *Inputs*
+%
+% * *raw_data* - |Cell| - Cell array containing processed data. Ex
+% dataloc.d 
+% * *xy* - |Array| - An array of integers representing indices of wells/xys
+% to process. Supports discontinuous ranges - Ex (1:5, 10:20)
+% * _varargin_ - |Option-value pair| - Supports additional inputs as
+% option-value pairs. Ex 'numspreads', 7
+%
+% *Optional Inputs*
+%
+% * *numspreads* - |Integer| - The number of spreads you'd like to generate
+% per cycle. *Default value: 7*
+% * *freq* - |Integer| - How frequently cycles occur. *Default value: 10*
+% * *bin* - |Array| - Logical array with binarized channel data. This is
+% layered over synthetic spreads to add noise. 
+% * *dist* - |Double| - Distance the spread grows per frame (typically a
+% the epsilon value given by prep_dbscan works well for dist) *Default
+% value: 65
+% * *lifetime* - |Integer| - How many timepoints cells remain in the "on"
+% or "active" state. *Default value: 3*
+% * *seed* - |Integer|, |Double|, |String|, |Char| - a seed value to
+% initialize the random number generator. Using the same seed value with
+% the same data will yield the same results each time, making the number
+% generator pseudo-random. Ex: 'potato', 6.022, 4815162342, "Orange"
+% *Default value: []*
+% * *maxsize* - |Double|, |Integer| - Maximum spread size, as multiples of
+% the dist value. If dist is 60 and maxsize is 3 then the maximum size will be 180. *Default value: 2.8*
+%
+% *Output*
+%
+% * *bin_synth* - |Cell| - Cell array containing synthetic binarized data for the desired
+% wells/xys
+%
 %% reformat
+% Helper function to take ARCOS data organized clusters by time and
+% reformat it to clusters by ID.
+%
+% *Input*
+%
+% * *cdata* - |Cell| - Cluster data. If using arcos_core, the main output of that
+% method. If using arcos, the clust_by_time output. 
+%
+% *Output*
+%
+% * *out* - |Cell| - Clusters by ID. Analogous to the clust_by_id output of
+% arcos.
+%
 %% binarize_robust
+% Method with three different ways to robustly binarize channel data.
+%
+% # *znorm*
+% # *robust* aka *selfrobust*
+% # *specialrobust*
+%
+% *Inputs*
+%
+% * *raw_data* - |Cell| - Cell array containing processed data. Ex
+% dataloc.d 
+% * *xy* - |Array| - An array of integers representing indices of wells/xys
+% to process. Supports discontinuous ranges - Ex (1:5, 10:20)
+% * *ctrl* - |Array| - An array of integers representing indices of control
+% wells/xys. 
+%Supports discontinuous ranges - Ex (1:5, 10:20)
+% * *chan* - |Char| - The channel to binarize.
+% * *type* - |Char| - One of the 3 methods listed above. Ex 'znorm'. Be
+% sure to exactly match the way it's typed above.
+% * *perc* - |Double|, |Integer| - The percentage of the data by which it
+% will be thresholded/binarized. Give as a full percentage and not a decimal. 80% should be
+% given as 80, not 0.8. Accepts values as high as 200 and as low as 0. 
+%
+% *Ouput*
+%
+% *out* - |Cell| - Cell array where each cell is binarized data for the
+% indexed well/xy.
 classdef arcos_utils
     methods(Static)
 		function out = formatr(filename,XCoord,YCoord,bin)
@@ -180,35 +320,34 @@ classdef arcos_utils
 		function [bin,threshold] = binarize(raw_data,xy,ch,perc)
 			bin = cell(1,numel(xy));
 			MegaDataHolder = [];
-			%% Loop through wells, append channel data to MegaDataHolder
+			%%Loop through wells, append channel data to MegaDataHolder
 			for i = 1:numel(xy)
 				well = xy(i);
 				channel = raw_data{well}.data.(ch{1});
-				MegaDataHolder = vertcat(MegaDataHolder, channel);
+				MegaDataHolder = vertcat(MegaDataHolder, channel); %#ok<AGROW> 
 			end
-			%% Get mean percentile of all well's channel data
+			%%Get mean percentile of all well's channel data
 			threshold = mean(prctile(MegaDataHolder,perc));
-			%% Loop through wells again and binarize
+			%%Loop through wells again and binarize
 			for i = 1:numel(xy)
 				well = xy(i);
 				channel = raw_data{well}.data.(ch{1});
-				
 				bin{well} = channel>threshold;
 			end
 		end 
 		function out = pulse2bin(pulseAnalysisData,raw_data,channel)
-    		%% Check for XYs with data and get their indicies
+    		%%Check for XYs with data and get their indicies
     		xy = 1:numel(pulseAnalysisData);
     		goodxys = ~cellfun(@isempty,pulseAnalysisData);% check to see if the input xys are good
     		xy = xy(goodxys);
     		
-    		%% Loop through XYs
+    		%%Loop through XYs
     		numXYs = numel(xy);
     		
     		out = {};
     		for iwell = 1:numXYs
         		well = xy(iwell);
-        		%% Store pulse data and coords
+        		%%Store pulse data and coords
         		pulseData = pulseAnalysisData{well}.data.(channel);
     		
         		% Make a data container
@@ -217,7 +356,7 @@ classdef arcos_utils
                 % Assign tracked points as zeros FIX - data is NaN unless real?
         		%dataCont(~isnan(raw_data{well}.data.XCoord)) = 0;
     		
-        		%% Loop through pulse data
+        		%%Loop through pulse data
         		for i = 1:size(pulseData,1)
             		if ~isempty(pulseData(i).pkpos)
                 		for ii = 1:size(pulseData(i).pkpos,1)
@@ -229,36 +368,36 @@ classdef arcos_utils
                 		end
             		end
         		end
-        		out{well} = dataCont;
+        		out{well} = dataCont; %#ok<AGROW> 
     		end %XY loop
 		end %convertPulseToBin
         function bin_synth = gensynth(raw_data,xy,varargin)
-            %% Default parameters
+            %%Default parameters
             p.numspreads = 7; %How many spreads occur per cycle
             p.freq = 10; %Spread frequency
             p.bin = []; %Optional binarized data - useful for adding "noise"
-            p.dist = 1; %Distance the spread grows per frame (epsilon from prep_dbscan is a useful metric)
+            p.dist = 65; %Distance the spread grows per frame (epsilon from prep_dbscan is a useful metric)
             p.lifetime = 3; %How long a cell within a spread remains active before switching off
             p.seed = []; %Optional seed value for random number generator
             p.maxsize = 2.8; %Max spread size
-            %% Setup
+            %%Setup
             nin = length(varargin);     %Check for even number of add'l inputs
             if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option-value pairs'); end%Splits pairs to a structure
             for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
-            %% Random Number Generator Seed
+            %%Random Number Generator Seed
 			if ~isempty(p.seed)
-				seed = str2double(evalc('disp(p.seed)'));
+				seed = mean(double(evalc('disp(p.seed)')));
 				rng(seed)
 			end%Use user-provided seed
-            %% Pre-allocate output
+            %%Pre-allocate output
             bin_synth = cell(1,length(xy));
-            %% Loop through XYs (wells)
+            %%Loop through XYs (wells)
             for iwell = 1:numel(xy)
                 well = xy(iwell);
                 XCoord = raw_data{well}.data.XCoord; % Assign X and Y Coords from data
                 YCoord = raw_data{well}.data.YCoord;
                 binSynth = boolean(zeros(size(XCoord,1), size(XCoord,2)));  % Pre-allocate logical array
-                %% Generate random start indices
+                %%Generate random start indices
 				for r = 1:round(size(binSynth,2)/p.freq+1)
                     col = r*p.freq-(p.freq-1);
 					for q = 1:p.numspreads %Generate random indices for starting pts
@@ -266,10 +405,10 @@ classdef arcos_utils
                         binSynth(istartPts(q,r),col) = 1;
 					end
 				end
-				%% Starting parameters
+				%%Starting parameters
                 cnt = 1;
                 sz = 1;
-                %% Loop through time series
+                %%Loop through time series
                 for time = 1:size(XCoord,2)
 					movingframe = (time-p.freq:time); %A sliding frame of time indices from the current time back to time-p.lifetime
 					movingframe = movingframe(movingframe>0); %Filter by values > 0
@@ -290,11 +429,11 @@ classdef arcos_utils
 								end
 							end
 						end
-						%% Set points inactive if they've been alive for p.lifetime (Donut)
+						%%Set points inactive if they've been alive for p.lifetime (Donut)
 						
 					end
                 end
-                %% Layer real data on top of synthetic
+                %%Layer real data on top of synthetic
                 if ~isempty(p.bin) %Use user-provided binary data
                     bin_synth{well} = logical(binSynth+p.bin{well});
                 else
@@ -303,7 +442,7 @@ classdef arcos_utils
             end %end well loop
 		end 
 		function out = reformat(cdata)
-			%% Load data into struct
+			%%Load data into struct
 			timerange = size(cdata,2);
 			max_id = cdata(end).newmax;
 			clusters = repmat(struct('cid',[],'data',struct('time',{},'XYCoord',{},'id',{},'numpts',{},'bounds',{},'inactive',{},'area',{},'compl',{},'rocarea',{},'roccount',{}),'t_start',[],'t_end',[],'dur',[], 'maxarea',[],'maxcount',[]),max_id,1); %set up struct of structs
@@ -321,7 +460,7 @@ classdef arcos_utils
 					clusters(id).data(time).minpts = minpts;
 				end
 			end
-			%% Loop through substructs and remove empty entries
+			%%Loop through substructs and remove empty entries
 			for i = 1:size(clusters,1)  
 				map = false(1,size(clusters(i).data,2));
 				for ii = 1:size(clusters(i).data,2)
@@ -337,7 +476,7 @@ classdef arcos_utils
 			MegaDataHolder = []; %Array of channel data, vertically concatenated
 			if perc > 200 || perc < 0; error('Perc should be a percentage <200, ex 85'); end
 			perc = perc/100;
-			%% Loop over all the xys and combine them into a mega data
+			%%Loop over all the xys and combine them into a mega data
 			% This loop defined by xys or control wells you specify
 			if isempty(ctrl); xy2bin = xy; else; xy2bin = ctrl; end
 			numXY2bin = numel(xy2bin);
@@ -351,7 +490,7 @@ classdef arcos_utils
     			end %if data exists
     			end %if raw_data is not empty
 			end %end normdata collection loop
-    		%% Calculate the method of normalization requested
+    		%%Calculate the method of normalization requested
 			switch type
     			case 'znorm' %Z-Score normalize (subtract mean of all data, divide by std dev)
         			MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
@@ -373,7 +512,7 @@ classdef arcos_utils
         			Subtract = mean(MegaDataHolder, 'omitnan'); %get the mean
         			DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
 			end       
-            %% Loop over all the xys again to normalize them
+            %%Loop over all the xys again to normalize them
 			numXYs = numel(xy);
 			out = cell(1,numXYs);
             for iXY = 1:numXYs

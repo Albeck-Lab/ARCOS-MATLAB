@@ -5,8 +5,6 @@
 % 
 %% Inputs
 % * *data* - |cell| - The data to be processed. Each cell is a well/xy.
-% Well data must be an array of doubles, formatted such that rows are cells (observations) and
-% columns are timepoints.
 % * *xy* - |array| - Array of well indices (integers) to process. Can handle
 % discontinuous indices. Ex: (1:5, 11:15)
 % * *ch* - |char| - The identifier of the channel to process. Ex: 'nEKAR'.
@@ -25,6 +23,7 @@
 % * *warnings* - |cell| - Warnings that can indicate poor clustering
 %% Examples
 % See the Demos folder for a variety of examples
+
 function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,varargin)
 	%% Optional Parameters
 	p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data

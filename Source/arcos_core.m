@@ -78,6 +78,8 @@
 % See "core_only.mlx" in the Demos folder to use ARCOS Core by itself
 %
 % Otherwise, see default_params.mlx in the Demos folder.
+%% See also
+% dbscan, knnsearch
 function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	p.eps = [];
 	p.minpts = [];
