@@ -32,6 +32,15 @@
 % * *activeXY* - |Double array| - X and Y coordinates for active cells
 % * *eps* - |Double| - Epsilon value for DBSCAN
 % * *minpts* - |Integer| - Minpts value for DBSCAN
+% * _varargin_ - |Option-value pair| - Accepts addition inputs as
+% option-value pairs. Ex 'debug', true. 
+%
+% * Optional Inputs*
+%
+% * *debug* - |Boolean|, |Logical| - Debug logging toggle. *Default value:
+% false*
+% * *verbose* - |Boolean|, |Logical| - Verbose logging toggle. *Default
+% value: true*
 %
 % *Ouputs*
 %
@@ -83,6 +92,9 @@
 function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	p.eps = [];
 	p.minpts = [];
+	p.verbose = true;
+	p.debug = false;
+	p.well = [];
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
@@ -92,13 +104,15 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	cdata = struct('untracked',{},'tracked',{},'eps',{},'minpts',{},'newmax',{});
 	warnings = struct('too_sparse',{});
 	%%Time loop
-    for time = 1:size(XCoord,2)
+	for time = 1:size(XCoord,2)
 		%%Setup: Eps and Minpts
 		if any(runPrep); [epst,minptst] = arcos_utils.prep_dbscan3(XCoord(:,time),YCoord(:,time),bin(:,time)); end
 		if ~runPrep(1);  epst = p.eps;  end  %Override with user-provided eps
 		if ~runPrep(2);  minptst = p.minpts; end  %Override with user-provided minpts
 		%%Log warning if eps is abnormal
-		if epst >150; warnings(time).too_sparse = "High Epsilon. Check data for low cell density";end % Warning if epsilon is abnormally high
+		if epst >150
+			warnings(time).too_sparse = "High Epsilon. Check data for low cell density";
+		end % Warning if epsilon is abnormally high
 		%%Setup and run Clustering
         activeXY = [XCoord(bin(:,time),time), YCoord(bin(:,time),time)]; %XY coordinates for active cells        
         cdata(time).untracked = clustering(activeXY, epst, minptst);
@@ -113,7 +127,12 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
         cdata(time).eps = epst;
         cdata(time).minpts = minptst;
         cdata(time).newmax = newmax;
-    end
+	end
+	num_high_eps = numel([warnings(:).too_sparse]);
+	if num_high_eps > 0 && p.verbose
+		warning(append("Well: ", string(p.well), " - ", string(num_high_eps), ' timepoints had higher than expected epsilon values and may not cluster well'))
+		disp("See the 'warnings' output for more information")
+	end
 end
 function out = clustering(activeXY, eps, minpts)
     out = struct('XYCoord',0,'id',0);

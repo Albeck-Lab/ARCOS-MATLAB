@@ -15,7 +15,7 @@
 % * *bin_perc* - |Double|- If auto-binarizing. the percentile by which to threshold and binarize the data. *Default: []*
 % * *eps* - |cell| - User-provided epsilon values for dbscan. *Default: []*
 % * *minpts* - |cell|- User-provided minpts values for dbscan. *Default: []*
-% * *debug* - |Logical|, |Boolean| - Enable debug logging. *Default: false*
+% * *verbose* - |Logical|, |Boolean| - Toggle verbose logging. *Default: true*
 %% Outputs
 % * *clust_by_time* - |cell| - Clusters organized by timepoint
 % * *clust_by_id* - |cell| - Clusters organized by cluster ID
@@ -30,6 +30,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 	p.bin_perc = []; %Percentile for threshold binarization
 	p.eps = {[]};
 	p.minpts = {[]};
+	p.verbose = true;
 	p.debug = false;
 	%% Prep varargin struct
 	nin = length(varargin);
@@ -79,12 +80,13 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 		nans_thr = 70; %If this percentage of the data is NaNs it'll get logged in warnings
 		if sum_nans/sz*100 > nans_thr
 			warnings(well).excess_nans = sum_nans/sz*100;
+			if p.verbose == true; warning(append("Excessive NaNs detected in well ", string(well))); end
 		end
 		%% Format and assign eps and minpts (if given)
 		if numel(p.eps) == 1; eps = p.eps{1}; else; eps = p.eps{well}; end 
 		if numel(p.minpts) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
         %%Do the arcos functions
-        [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts);
+        [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well);
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
 		binaries = bin;
     end %well loop
