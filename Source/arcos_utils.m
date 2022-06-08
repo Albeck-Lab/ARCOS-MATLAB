@@ -295,10 +295,14 @@ classdef arcos_utils
             real = ~isnan(vals); %Logical map of values ~= NaN
             eps = mean(vals(real)); %Mean of non-NaN epsilon values
         end
-        function [eps,minpts] = prep_dbscan3(XCoord,YCoord,bin)
+		function [eps,minpts] = prep_dbscan3(XCoord,YCoord,bin,varargin)
+			inp.n = 11;
+			nin = length(varargin);
+			if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
+			for s = 1:2:nin; inp.(lower(varargin{s})) = varargin{s+1}; end
+			n = inp.n;
             xy = [XCoord,YCoord];
             P = 0;
-            n = 11;
             [~,d] = knnsearch(xy,xy,'K', n);
             d_real = sort(d(~isnan(d(:,n)),n));
             eps = median(d_real); %Median distance to 11th neighbor of all points
@@ -318,12 +322,12 @@ classdef arcos_utils
             end
 		end
 		function [bin,threshold] = binarize(raw_data,xy,ch,perc)
+			if ischar(ch); ch = {ch}; end % assert ch is cell
 			bin = cell(1,numel(xy));
 			MegaDataHolder = [];
 			%%Loop through wells, append channel data to MegaDataHolder
-			for i = 1:numel(xy)
-				well = xy(i);
-				channel = raw_data{well}.data.(ch{1});
+			for i = 1:size(raw_data,2)
+				channel = raw_data{i}.data.(ch{1});
 				MegaDataHolder = vertcat(MegaDataHolder, channel); %#ok<AGROW> 
 			end
 			%%Get mean percentile of all well's channel data
