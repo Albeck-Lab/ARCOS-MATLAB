@@ -58,8 +58,6 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 	if isempty(p.bin)
 		if ~isempty(p.bin_perc)
 			bin = arcos_utils.binarize(data,xy,ch,p.bin_perc); %Use simple binarization if no user-provided binarized data
-		else
-		   error("No binarized data has been provided. To auto-binarize, provide a percentile to threshold. Ex 'bin_perc', 80"); 
 		end
 	else
 		bin = p.bin;

@@ -21,6 +21,7 @@
 function arcos_id_apoptosis(clust_by_id,xy,ch,nd2path)
 	handle=3; % The number of frames before and after a spread's start
 	dao = ImageAccess(nd2path); %Data access object for the nd2 file
+	if ~isfield(clust_by_id{xy(1)}, 't_start'); error("Insufficient data. Analysis must be run first."); end
 	for ixy = 1:numel(xy)
 		well = xy(ixy);
 		spreads = clust_by_id{well};

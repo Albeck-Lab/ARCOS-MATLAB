@@ -179,7 +179,7 @@ classdef arcos_analysis
                 
             if nFts < 1; warning('Give at least one filter set... to filter the data...'); else            
             % Check there is a .c and .p for every .t
-            if ~isstruct(fts) || any(cellfun(@isempty,struct2cell(fts)),'all'); warning('One of your filter parameters are empty, check them'); else
+            if ~isstruct(fts) || any(cellfun(@isempty,struct2cell(fts)),'all'); warning('One of your filter parameters is empty, check them'); else
 
             % Find the filter names and their functions
             trueFts = arrayfun(@(x)find(~cellfun(@isempty,regexpi(x.c,fNames(:,1)))),fts,'UniformOutput',false)';

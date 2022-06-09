@@ -109,6 +109,12 @@
 % * *bin* - |Logical array| - A logical array representing the binarized
 % channel data for the currently indexed well/xy (1 = active, 0 =
 % inactive). 
+% * _varargin_ = |Option-value pair| - Accepts optional inputs as
+% option-value pairs.
+%
+% *Optional Inputs*
+%
+% * *n* - |Integer| - The nth nearest neighbor to use for knnsearch.
 %
 % *Ouputs*
 %
