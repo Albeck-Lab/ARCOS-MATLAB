@@ -1,0 +1,74 @@
+Welcome to the ARCOS Troubleshooting Guide! 
+
+If you encountered a warning in the Command Window, go to Section A.
+If you encountered an error in the Command Window, go to Section B.
+If you didn't encounter an error but your results are unexpected, go to Section C. 
+
+Section A
+	Choose one:
+		"Additional inputs must be provided as option, value pairs"
+			You've incorrectly typed an optional parameter. Optional parameters should be given as follows: 'parameter_name', value
+			Example: 'eps', 60.
+			In context example: out = arcos(data,xy,'nEKAR','bin_perc',75);
+
+		"Optional parameter 'bin_perc' not set. Binarizing data using 80th percentile threshold" 
+			You have chosen not to specify a percentile by which to threshold your data for binarization.
+			ARCOS is issuing this warning to let you know that it's automatically binarizing your data with default values.
+			In most cases this will work just fine and you can simply ignore the warning.
+			If you'd like to override the default you can provide ARCOS with your own percentile to threshold the data as an option-value pair.
+			Example: out = arcos(data,xy,'nEKAR','bin_perc',75);
+
+		"Well: P - Q timepoints had higher than expected epsilon values and may not cluster well"
+			For well/xy P, there were Q timepoints that had unexpectedly high calculated epsilon values.
+			Typically this means that the distribution of cells for well/xy P is not regular. Cells might be clumped up, resulting in regions of high and low density.
+			Since that metric is used to calculate epsilon (a parameter of the DBSCAN clustering algorithm) clustering may not be ideal at high values.
+			If you've encountered this warning you should plot clusters for this well/xy using arcos_plot and verify visually that clustering has been performed accurately.
+			If clustering is inaccurate you can override ARCOS's automatic epsilon and minpts calculation by providing your own values.
+
+		"Give at least one filter set... to filter the data..."
+			You're attempting to filter data using arcos_analysis.filter() but you haven't provided a filter.
+			Here's an example of what a filter should look like: fts(1).t = 'Min'; fts(1).c = 'dur'; fts(1).p = 5;
+        		This would filter and keep all the data where the spread lasts at least 5 tps.
+
+		"One of your filter parameters is empty, check them"
+			One of the parameters by which you're trying to filter hasn't been specified. 
+			Check that your filter is set up in this format: fts(1).t = 'Min'; fts(1).c = 'dur'; fts(1).p = 5;
+
+		"Excessive NaNs detected in well P"
+			If you're seeing this error then at least 70% of the data for well P is NaNs (Not A Number).
+			Typically this appears when ARCOS is processing background wells, but it may also appear when the density of cells in the field is low.
+			If you're seeing this error when ARCOS is processing non-background wells it's recommended that you check that clustering has been performed accurately. 
+			Check the clust_by_time output of ARCOS and verify that values for eps (epsilon) and minpts are within usual range(50-80 for epsilon and 4-5 for minpts).
+			Use arcos_plot to plot clusters for the problem well.
+			If clustering is inaccurate you can override ARCOS's automatic epsilon and minpts calculation by providing your own values.
+
+		"Do not close the figure until the process has finished"
+			When running arcos_plot.plot() the function will open a figure in the current MATLAB window.
+			Closing the figure before the function has had a chance to finish will interrupt the program and cause it to stop early, producing errors. 
+
+		"Assuming equal numbers of files in both directories"
+			This warning appears when running arcos_plot.gif_sbs. The GIF Side by Side function was designed for the user to make comparisons between results of different 
+			processes on the same data. For example, viewing tracked vs untracked clusters. 
+			It only works when both of the directories you've specified have equal amounts of files in each directory.
+
+Section B
+	Choose one: 
+		"Perc should be a percentage <200, ex 85"
+			You're seeing this error because the value of 'perc' you've provided for arcos_utils.binarize_robust is invalid.
+			Values should be expressed as positive numbers less than 200. 
+
+		"No bounds detected in data. Have you run analysis yet?"
+			This error occurs when you're attempting to plot data with arcos_plot.plot(), optional parameter 'usebounds' is true (default), and your data has not yet been analyzed.
+			The quickest solution is to simply toggle 'usebounds' off by adding 'usebounds',false to your call to arcos_plot.plot(), however this will plot clusters without bounds.
+			If you wish to use bounds then you must first analyze your data with arcos_analysis.analyze() and provide that method's output to arcos_plot.plot(). 
+ 
+		"Insufficient data. Analysis must be run first."
+			This error occurs when you're attempting to run arcos_id_apoptosis but you haven't first run arcos_analysis.analyze() on your clust_by_id data.
+			The solution, therefore, is to run arcos_analysis.analyze() and try again.
+
+Section C
+	Choose one:
+                                                                    
+
+
+Daniel Oberbauer - 6/15/2022
