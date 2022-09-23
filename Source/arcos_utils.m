@@ -301,7 +301,7 @@ classdef arcos_utils
             real = ~isnan(vals); %Logical map of values ~= NaN
             eps = mean(vals(real)); %Mean of non-NaN epsilon values
         end
-		function [eps,minpts] = prep_dbscan3(XCoord,YCoord,bin,varargin)
+		function [eps,minpts] = prep_dbscan3(XCoord,YCoord,bin,pixsize,varargin)
 			inp.n = 11;
 			nin = length(varargin);
 			if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
@@ -311,7 +311,7 @@ classdef arcos_utils
             P = 0;
             [~,d] = knnsearch(xy,xy,'K', n);
             d_real = sort(d(~isnan(d(:,n)),n));
-            eps = median(d_real); %Median distance to 11th neighbor of all points
+            eps = mean(median(d_real)*pixsize); %Median distance to 11th neighbor of all points
             p = size(XCoord(bin),1)/size(XCoord,1); %Probability of cell being active
             for k = n:-1:1
                 newP = nchoosek(n,k) .* p.^k .* (1-p).^(n-k);

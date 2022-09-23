@@ -95,6 +95,7 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	p.verbose = true;
 	p.debug = false;
 	p.well = [];
+	p.pixsizex = [1 1];
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
@@ -106,7 +107,7 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	%%Time loop
 	for time = 1:size(XCoord,2)
 		%%Setup: Eps and Minpts
-		if any(runPrep); [epst,minptst] = arcos_utils.prep_dbscan3(XCoord(:,time),YCoord(:,time),bin(:,time)); end
+		if any(runPrep); [epst,minptst] = arcos_utils.prep_dbscan3(XCoord(:,time),YCoord(:,time),bin(:,time),pixsize); end
 		if ~runPrep(1);  epst = p.eps;  end  %Override with user-provided eps
 		if ~runPrep(2);  minptst = p.minpts; end  %Override with user-provided minpts
 		%%Log warning if eps is abnormal

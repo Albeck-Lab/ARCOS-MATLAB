@@ -30,6 +30,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 	p.bin_perc = []; %Percentile for threshold binarization
 	p.eps = {[]};
 	p.minpts = {[]};
+	p.pixsize = [1 1];
 	p.verbose = true;
 	p.debug = false;
 	%% Prep varargin struct
@@ -84,7 +85,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 		if numel(p.eps) == 1; eps = p.eps{1}; else; eps = p.eps{well}; end 
 		if numel(p.minpts) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
         %%Do the arcos functions
-        [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well);
+        [clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
 		binaries = bin;
     end %well loop
