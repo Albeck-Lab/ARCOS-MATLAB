@@ -344,8 +344,8 @@ classdef arcos_utils
             		if ~isempty([pulseData(i).pkpos])
                 		for ii = 1:size(pulseData(i).pkpos,1)
                     		%% Get start position and end (from dur of each pulse
-                    		tStart = pulseData(i).pkpos(ii);
-                    		tEnd = tStart + pulseData(i).dur(ii)-1; % FIX - Duration includes the initial tp, so you have to subtract 1
+                		    tStart = pulseData(i).mpos(ii) - ((pulseData(i).dur(ii)-1)/2);
+                		    tEnd = pulseData(i).mpos(ii) + ((pulseData(i).dur(ii)-1)/2); % Duration includes the initial tp, so you have to subtract 1
                     		%% Fill in the these points with 1s!
                     		dataCont(i,tStart:tEnd) = 1;
                 		end
