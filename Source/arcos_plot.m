@@ -175,11 +175,11 @@ classdef arcos_plot
                         end
                     end
                     title(append("Well: ",int2str(well)," Time: ",int2str(time)));
-					if isempty(p.bin_real)
-						legend('inactive','active','cluster','bounds','Location','northeastoutside');
-					else
-						legend('inactive','active_real','ative_synth','cluster','bounds','Location','northeastoutside');
-					end
+% 					if isempty(p.bin_real)
+% 						legend('inactive','active','cluster','bounds','Location','northeastoutside');
+% 					else
+% 						legend('inactive','active_real','ative_synth','cluster','bounds','Location','northeastoutside');
+% 					end
                     set(gca,'ydir','reverse') %Reverse Y axis (image origin is top left)
                     image = gcf;
                     saveas(image,append(p.outpath,'/','XY ',int2str(well),'/',sprintf('%04d',time), '.png'))

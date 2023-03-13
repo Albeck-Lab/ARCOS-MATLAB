@@ -48,7 +48,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 	binaries = cell(1,numel(xy));
 	warnings = struct('frame_warnings',{},'excess_nans',{});
 	%% Check XYs
-	goodxys = ~arrayfun(@(x)isempty(data{x}.cellindex),xy);% check to see if the input xys are good
+	goodxys = ~arrayfun(@(x)isempty(data{x}),xy);% check to see if the input xys are good
 	xy = xy(goodxys);
 	%% Channel prep
 	if ischar(ch); ch = {ch}; end % assert ch is cell

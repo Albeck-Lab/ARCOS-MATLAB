@@ -95,7 +95,7 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 	p.verbose = true;
 	p.debug = false;
 	p.well = [];
-	p.pixsizex = [1 1];
+	p.pixsize = [1 1];
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
@@ -104,10 +104,12 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
     newmax = 0;
 	cdata = struct('untracked',{},'tracked',{},'eps',{},'minpts',{},'newmax',{});
 	warnings = struct('too_sparse',{});
+    XCoord = XCoord.*p.pixsize(1);
+    YCoord = YCoord.*p.pixsize(2);
 	%%Time loop
 	for time = 1:size(XCoord,2)
 		%%Setup: Eps and Minpts
-		if any(runPrep); [epst,minptst] = arcos_utils.prep_dbscan3(XCoord(:,time),YCoord(:,time),bin(:,time),pixsize); end
+		if any(runPrep); [epst,minptst] = arcos_utils.prep_dbscan2(XCoord(:,time),YCoord(:,time),bin(:,time)); end
 		if ~runPrep(1);  epst = p.eps;  end  %Override with user-provided eps
 		if ~runPrep(2);  minptst = p.minpts; end  %Override with user-provided minpts
 		%%Log warning if eps is abnormal
@@ -115,7 +117,7 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 			warnings(time).too_sparse = "High Epsilon. Check data for low cell density";
 		end % Warning if epsilon is abnormally high
 		%%Setup and run Clustering
-        activeXY = [XCoord(bin(:,time),time), YCoord(bin(:,time),time)]; %XY coordinates for active cells        
+        activeXY = [XCoord(bin(:,time),time), YCoord(bin(:,time),time)]; %XY coordinates for active cells EDIT FIX ND - this can give a nan?      
         cdata(time).untracked = clustering(activeXY, epst, minptst);
         %%Track if possible
 		if time==1
@@ -137,10 +139,15 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 end
 function out = clustering(activeXY, eps, minpts)
     out = struct('XYCoord',0,'id',0);
-    if (isempty(activeXY))
-        return %Return control to main function if no active points
-    end
+    if isempty(activeXY); return; end
     clusters = dbscan(activeXY, eps, minpts);
+    outliers = clusters < 0;
+    max_clust_id = max(clusters(~outliers));
+    if isempty(max_clust_id); max_clust_id=0; end
+    sum_outliers = sum(outliers);
+    fake_clust = max_clust_id+1:max_clust_id+sum_outliers;
+    clusters(outliers) = fake_clust';
+
     for cl = 1:max(clusters)
         pts = activeXY(clusters==cl,:);
         out(cl).XYCoord = pts; % XYCoord in that cluster

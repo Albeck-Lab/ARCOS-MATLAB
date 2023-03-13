@@ -114,13 +114,17 @@ classdef arcos_analysis
             end
             out = clust_by_id;
 		end
-		function out = dunkin(clust_by_id) 
+		function out = dunkin(clust_by_id)
 			c = clust_by_id; %Create alias 
 			for i = 1:size(c,2)
 				for ii = 1:size(c{i},1)
 					clust = c{i}(ii).data; %Store cluster data
 					first = clust(1).XYCoord; %Get coords for first timepoint
-					cent = mean(first); %Calculate centroid
+                    if size(first,1) > 1
+					    cent = mean(first); %Calculate centroid
+                    else
+                        cent = first;
+                    end
 					for iii = 1:size(clust,2)
 						pts_on = clust(iii).XYCoord; %Active points
 						pts_on(:,3) = 1; %Flag on
@@ -169,6 +173,7 @@ classdef arcos_analysis
                 'dur',                  []; ...
                 't_start',              []; ...
                 'maxarea',              []; ...
+                'maxcount',             []; ...
 				'mean_donutness',			'@(x)nanmean([x.data.donutness])'; ...
                 'mean_roc_count',        '@(x)nanmean([x.data.roccount])';...
                 'mean_roc_area',        '@(x)nanmean([x.data.rocarea])';...

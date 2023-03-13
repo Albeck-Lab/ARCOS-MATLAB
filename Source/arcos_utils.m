@@ -60,35 +60,6 @@
 %% prep_dbscan2
 % A method for determining optimal epsilon and minpts values for DBSCAN.
 %
-% This method first asserts minpts = 2*dim where dim is the dimensionality of the
-% data.
-%
-% This method averages the epsilon values calculated for all timepoints so
-% as to approximate a "blanket" epsilon that can be used across all
-% timepoints for the given well/XY. 
-%
-% It is designed to be controlled via an external for loop.
-% 
-% Otherwise it is functionally identical
-% to prep_dbscan. See prep_dbscan for more information.
-%
-% *Inputs*
-%
-% * *XCoord* - |Array| - An array of doubles containing the X coordinates
-% for tracked cells. Must be organized such that rows are individual
-% tracked cells and columns are timepoints.
-% * *YCoord* - |Array| - An array of doubles containing the Y coordinates
-% for tracked cells. Must be organized such that rows are individual
-% tracked cells and columns are timepoints. 
-% * time* - |Integer| - The currently indexed timepoint in the for loop. 
-%
-% *Outputs*
-%
-% * *eps* - |Double| - The average of calculated epsilons for this xy/well.
-% * *minpts* - |Integer| - The minpts parameter of DBSCAN.
-%% prep_dbscan3
-% A method for determining optimal epsilon and minpts values for DBSCAN.
-%
 % This method increases minpts when data points are densely distributed or noisey and
 % lowers minpts when they are sparsely distributed. 
 %
@@ -283,25 +254,25 @@ classdef arcos_utils
             [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
             eps = max_d(ix);
         end 
-        function [eps,minpts] = prep_dbscan2(XCoord, YCoord, time)
-            minpts = ndims(XCoord)*2; %Minpts defined by dimensionality of data
-            vals = zeros(1,length(time)); %Preallocation of data
-            for it = 1:numel(time)
-                t = time(it);
-                [~,d] = knnsearch([XCoord(:,t),YCoord(:,t)], [XCoord(:,t), YCoord(:,t)],'K', minpts+1); %k-nearest neighbors search
-                d = max(d,[],2); %Biased toward greater distances of k-nearest
-                max_d = sort(d);
-                scaled = max_d * length(max_d)/max(max_d); %Scale the data
-                smoothed = smoothdata(scaled,'gaussian'); %Smooth it
-                slopes = gradient(smoothed); %Take first derivative
-                [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
-                eps = max_d(ix); %Set epsilon to the value of max_d at index ix
-                vals(it) = eps; %Store eps in vals
-            end
-            real = ~isnan(vals); %Logical map of values ~= NaN
-            eps = mean(vals(real)); %Mean of non-NaN epsilon values
-        end
-		function [eps,minpts] = prep_dbscan3(XCoord,YCoord,bin,pixsize,varargin)
+%         function [eps,minpts] = prep_dbscan2(XCoord, YCoord, time)
+%             minpts = ndims(XCoord)*2; %Minpts defined by dimensionality of data
+%             vals = zeros(1,length(time)); %Preallocation of data
+%             for it = 1:numel(time)
+%                 t = time(it);
+%                 [~,d] = knnsearch([XCoord(:,t),YCoord(:,t)], [XCoord(:,t), YCoord(:,t)],'K', minpts+1); %k-nearest neighbors search
+%                 d = max(d,[],2); %Biased toward greater distances of k-nearest
+%                 max_d = sort(d);
+%                 scaled = max_d * length(max_d)/max(max_d); %Scale the data
+%                 smoothed = smoothdata(scaled,'gaussian'); %Smooth it
+%                 slopes = gradient(smoothed); %Take first derivative
+%                 [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
+%                 eps = max_d(ix); %Set epsilon to the value of max_d at index ix
+%                 vals(it) = eps; %Store eps in vals
+%             end
+%             real = ~isnan(vals); %Logical map of values ~= NaN
+%             eps = mean(vals(real)); %Mean of non-NaN epsilon values
+%         end
+    function [eps,minpts] = prep_dbscan2(XCoord,YCoord,bin,varargin)
 			inp.n = 11;
 			nin = length(varargin);
 			if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
@@ -311,7 +282,7 @@ classdef arcos_utils
             P = 0;
             [~,d] = knnsearch(xy,xy,'K', n);
             d_real = sort(d(~isnan(d(:,n)),n));
-            eps = mean(median(d_real)*pixsize); %Median distance to 11th neighbor of all points
+            eps = mean(median(d_real)); %Median distance to 11th neighbor of all points
             p = size(XCoord(bin),1)/size(XCoord,1); %Probability of cell being active
             for k = n:-1:1
                 newP = nchoosek(n,k) .* p.^k .* (1-p).^(n-k);
@@ -333,8 +304,10 @@ classdef arcos_utils
 			MegaDataHolder = [];
 			%%Loop through wells, append channel data to MegaDataHolder
 			for i = 1:size(raw_data,2)
-				channel = raw_data{i}.data.(ch{1});
-				MegaDataHolder = vertcat(MegaDataHolder, channel); %#ok<AGROW> 
+				if ~isempty(raw_data{i})
+					channel = raw_data{i}.data.(ch{1});
+					MegaDataHolder = vertcat(MegaDataHolder, channel); %#ok<AGROW> 
+				end
 			end
 			%%Get mean percentile of all well's channel data
 			threshold = mean(prctile(MegaDataHolder,perc));
@@ -368,11 +341,11 @@ classdef arcos_utils
     		
         		%%Loop through pulse data
         		for i = 1:size(pulseData,1)
-            		if ~isempty(pulseData(i).pkpos)
+            		if ~isempty([pulseData(i).pkpos])
                 		for ii = 1:size(pulseData(i).pkpos,1)
                     		%% Get start position and end (from dur of each pulse
                     		tStart = pulseData(i).pkpos(ii);
-                    		tEnd = tStart + pulseData(i).dur(ii);
+                    		tEnd = tStart + pulseData(i).dur(ii)-1; % FIX - Duration includes the initial tp, so you have to subtract 1
                     		%% Fill in the these points with 1s!
                     		dataCont(i,tStart:tEnd) = 1;
                 		end
@@ -481,48 +454,92 @@ classdef arcos_utils
 				clusters(i).data(map) = [];
 			end
 			out = clusters;
-		end
-		function out = binarize_robust(raw_data,xy,ctrl,chan,type,perc)
+        end % end of reformat(data)
+		
+        function out = binarize_robust(raw_data,xy,ctrl,chan,type,perc)
 			MegaDataHolder = []; %Array of channel data, vertically concatenated
 			if perc > 200 || perc < 0; error('Perc should be a percentage <200, ex 85'); end
 			perc = perc/100;
 			%%Loop over all the xys and combine them into a mega data
+
 			% This loop defined by xys or control wells you specify
-			if isempty(ctrl); xy2bin = xy; else; xy2bin = ctrl; end
+			% Control wells should be conditions where the cells "do
+            % nothing". EX: ERK inhibitor treated EKAR cells
+            if isempty(ctrl); xy2bin = xy; else; xy2bin = ctrl; end
+
 			numXY2bin = numel(xy2bin);
 			for iXY = 1:numXY2bin
     			tXY = xy2bin(iXY);
     			if ~isempty(raw_data{tXY}) %check the XY isn't empty
     			if isfield(raw_data{tXY}, 'data') %check the XY has data
     			if isfield(raw_data{tXY}.data, chan) %check if that XY has the channel in it
-        			MegaDataHolder = vertcat(MegaDataHolder, raw_data{tXY}.data.(chan)); %#ok<AGROW> %concat to megadataholder
+        			MegaDataHolder = vertcat(MegaDataHolder, raw_data{tXY}.data.(chan)); %#ok<AGROW> %concat all data into one place
     			end %if the chan exists
     			end %if data exists
     			end %if raw_data is not empty
 			end %end normdata collection loop
-    		%%Calculate the method of normalization requested
+
+    		%% Calculate the method of normalization requested
 			switch type
-    			case 'znorm' %Z-Score normalize (subtract mean of all data, divide by std dev)
-        			MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2); %subtract the min first
-        			Subtract = mean(MegaDataHolder, 'omitnan'); %get the mean
-        			DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
-    			case {'robust','selfrobust'} %Robust Scalar (scales to median and quantiles)
-        			Subtract = median(MegaDataHolder, 'omitnan'); %get the median
+                case 'znorm' % Z-Score normalize to the whole dataset (or controls)
+                    % Method: Subtract mean of all (or control) data then divide that by the std dev of all the data
+                    % Use that std dev as threshold to determin on state
+        			Subtract = mean(MegaDataHolder,'all','omitnan'); %get the mean of all the data
+                    DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); % get the std
+                    DiffSigThresh = DivideBy; %Determine Value that shows enough change to be postive
+                
+                case 'meansub znorm' % Z-Score normalize to after self mean subtraction
+                    % Method: Subtract each data's mean from itself, then find what is considered a std dev from that mean 
+                    MegaDataHolder = MegaDataHolder - mean(MegaDataHolder,2,'omitnan'); %subtract the mean first
+                    DiffSigThresh = std(MegaDataHolder, 0, 2, 'omitnan'); %get std dev of each data point
+                    DiffSigThresh = mean(DiffSigThresh); % get the average std
+
+                case 'minsub znorm' % Z-Score normalize using means of the datas 
+                    % Method: Subtract each data's min from itself, subtract the mean, then divide that individual cell by its own std dev 
+                    MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2,'omitnan'); %subtract the min first
+        			DiffSigThresh = std(MegaDataHolder, 0, 2, 'omitnan'); % get std dev
+                    DiffSigThresh = mean(DiffSigThresh,"all",'omitnan');
+
+                case 'robust' % Robust Scalar (scales to median and quantiles)
+                    % Method: Get the median and quantiles of the data over time
+                    % Subtract the median and divide by the IQR
+                    Subtract = median(MegaDataHolder,2,'omitnan');
+                    MegaDataHolder = MegaDataHolder - Subtract; % subtract the median of each data point
         			Quantilz = quantile(MegaDataHolder, (0:0.25:1),'all');
         			Q25 = Quantilz(2); Q75 = Quantilz(4); %get the 25th and 75th quantiles
         			DivideBy = Q75 - Q25; %get the interquantile range
-    			case {'specialrobust'} %Robust Scalar (scales to median and quantiles)
+                    DiffSigThresh = DivideBy; 
+
+                case 'minmediansub robust' % Robust Scalar (scales to median and quantiles, after subtracting the mins)
+                    % Method: Get the median and quantiles of the data over time
+                    % Subtract the median and divide by the IQR
+                    MegaDataHolder = MegaDataHolder - min(MegaDataHolder,[],2,'omitnan'); %subtract the min first
+        			MegaDataHolder = MegaDataHolder - median(MegaDataHolder,2,'omitnan'); % then sub the median
+        			Quantilz = quantile(MegaDataHolder, (0:0.25:1),2);
+        			Q25 = Quantilz(:,2); Q75 = Quantilz(:,4); %get the 25th and 75th quantiles
+        			DiffSigThresh = Q75 - Q25; %get the interquantile range
+                    DiffSigThresh = median(DiffSigThresh,'omitnan');
+
+                case 'mediansub robust' % Robust Scalar (scales to median and quantiles, after subtracting the mins)
+                    % Method: Get the median and quantiles of the data over time
+                    % Subtract the median and divide by the IQR
+        			MegaDataHolder = MegaDataHolder - median(MegaDataHolder,2,'omitnan'); % sub the median
+        			Quantilz = quantile(MegaDataHolder, (0:0.25:1),2);
+        			Q25 = Quantilz(:,2); Q75 = Quantilz(:,4); %get the 25th and 75th quantiles
+        			DiffSigThresh = Q75 - Q25; %get the interquantile range
+                    DiffSigThresh = median(DiffSigThresh,'omitnan');
+
+    			case 'specialrobust' % Robust Scalar (scales to median and quantiles)
         			Subtract = median(MegaDataHolder, 2,'omitnan'); %get the median for each cell, to self subtract
         			Quantilz = quantile(MegaDataHolder, (0:0.25:1),2);
         			Q25 = Quantilz(:,2); Q75 = Quantilz(:,4); %get the 25th and 75th quantiles
-        			DivideBy = median(Q75 - Q25,'omitnan'); %get the median interquantile range to divide all data by
-    			otherwise %use the default of zscore, but warn them about it
-        			%fprintf('Normalization method %s given as input not recognized, using Z-Score normalization instead. \n', p.normalize)
-        			type = 'znorm';
-        			Subtract = mean(MegaDataHolder, 'omitnan'); %get the mean
-        			DivideBy = std(MegaDataHolder, 0, 'all', 'omitnan'); %get std dev
-			end       
-            %%Loop over all the xys again to normalize them
+        			DiffSigThresh = median(Q75 - Q25,'omitnan'); %get the median interquantile range to divide all data by
+                   
+                otherwise
+        			error('Normalization method %s given as input not recognized. \n', type)
+            end
+
+            %% Loop over all the xys again to normalize them
 			numXYs = numel(xy);
 			out = cell(1,numXYs);
             for iXY = 1:numXYs
@@ -530,12 +547,34 @@ classdef arcos_utils
                 if ~isempty(raw_data{tXY}) %check the XY isn't empty
                 if isfield(raw_data{tXY}, 'data') %check the XY has data
                 if isfield(raw_data{tXY}.data, chan) %check if that XY has the channel in it
+                    tDat = []; %ensure data isn't used twice by accident
                     switch type
+                        case 'znorm'
+                            tDat = (((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy) > ((raw_data{tXY}.data.(chan)) - Subtract) + DiffSigThresh*perc;  % is the data above the thresh?
+                            tDat = double(tDat); % convert the data back to a double
+                            tDat(isnan(raw_data{tXY}.data.(chan))) = nan; % find where the nan was before make the data nan again
+                            out{tXY} = tDat; % give the data to the output structure
+                        case {'minsub znorm','meansub znorm'}
+                            tDat = raw_data{tXY}.data.(chan) > (mean(raw_data{tXY}.data.(chan),2,'omitnan') + (DiffSigThresh*perc));
+                            tDat = double(tDat); % convert the data back to a double
+                            tDat(isnan(raw_data{tXY}.data.(chan))) = nan; % find where the nan was before make the data nan again
+                            out{tXY} = tDat; % give the data to the output structure
+                        case {'minmediansub robust','mediansub robust'}
+                            tDat = raw_data{tXY}.data.(chan) > (median(raw_data{tXY}.data.(chan),2,'omitnan') + (DiffSigThresh*perc));
+                            tDat = double(tDat); % convert the data back to a double
+                            tDat(isnan(raw_data{tXY}.data.(chan))) = nan; % find where the nan was before make the data nan again
+                            out{tXY} = tDat; % give the data to the output structure
                         case 'specialrobust'
                             Subtract = median(raw_data{tXY}.data.(chan), 2,'omitnan'); %get the median for each cell, to self subtract
-                            out{tXY} = (((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy) > DivideBy*perc; %make normalized data
+                            tDat = (((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy) > (DivideBy*perc); %make normalized data
+                            tDat = double(tDat); % convert the data back to a double
+                            tDat(isnan(raw_data{tXY}.data.(chan))) = nan; % find where the nan was before make the data nan again
+                            out{tXY} = tDat; % give the data to the output structure
                         otherwise
-                            out{tXY} = (((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy) > DivideBy*perc; %make normalized data
+                            tDat = (((raw_data{tXY}.data.(chan)) - Subtract) ./ DivideBy) > (DivideBy*perc); %make normalized data
+                            tDat = double(tDat); % convert the data back to a double
+                            tDat(isnan(raw_data{tXY}.data.(chan))) = nan; % find where the nan was before make the data nan again
+                            out{tXY} = tDat; % give the data to the output structure
                     end %end switch
 					%mean or median of DivideBy value (divide it by 2),
 					% use that number to threshold.
@@ -543,6 +582,6 @@ classdef arcos_utils
                 end %if data exists
                 end %if raw_data is not empty
             end %end second iXY loop
-		end
-    end
+        end % end of binarize_robust()
+    end % of methods
 end
