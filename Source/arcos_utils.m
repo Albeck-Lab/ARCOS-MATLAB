@@ -211,6 +211,27 @@
 %
 % *out* - |Cell| - Cell array where each cell is binarized data for the
 % indexed well/xy.
+%% Convert ARCOS Analysis Data
+% arcosDF = Convert_Arcos_Analysis_Data(dataloc, channel, varargin)
+% Converts ARCOS in given dataloc (version > 3 required) structure in a table (that can be used like a dataframe)
+% 
+% dataloc - dataloc struct or cell array of (can be mixed) dataloc structs and paths to datalocs
+% channel - ARCOS channel you want to convert (ex: EKAR), can be cell array for each dataloc or single channel
+% 
+% Optional Inputs:
+% tstartaftertx - how many HOURS before starting to consider data after the given treatment (default is 0)
+% tmaxaftertx - how many HOURS after the tx are allowed to be considered? (default is whole movie after tx)
+% aftertx - after which tx should data be considered? (default is first tx for that xy)
+% exclude - treatments to exclude (default = none)
+% txs -txs to consider (default = {'pTx','Tx1','Tx2','Tx3','Tx4'})
+% 
+% boxsize - how big should the square for "hotspot" detection be? (in uM) (will be boxsize uM by boxsize uM) (default = 30)
+% smlthresh - time thresholds for short, medium, and long spread durations (default = [0,0.5,1]) given in hours
+% 
+% meanreplicates - mean technical replicates? (default = false)
+% standardize - standardize the data? (default = false)
+%
+% Copyright. Nicholaus DeCuzzi. 2023
 classdef arcos_utils
     methods(Static)
 		function out = formatr(filename,XCoord,YCoord,bin)
@@ -341,8 +362,8 @@ classdef arcos_utils
     		
         		%%Loop through pulse data
         		for i = 1:size(pulseData,1)
-            		if ~isempty([pulseData(i).pkpos])
-                		for ii = 1:size(pulseData(i).pkpos,1)
+            		if ~isempty([pulseData(i).mpos])
+                		for ii = 1:size(pulseData(i).mpos,1)
                     		%% Get start position and end (from dur of each pulse
                 		    tStart = pulseData(i).mpos(ii) - ((pulseData(i).dur(ii)-1)/2);
                 		    tEnd = pulseData(i).mpos(ii) + ((pulseData(i).dur(ii)-1)/2); % Duration includes the initial tp, so you have to subtract 1
@@ -583,5 +604,232 @@ classdef arcos_utils
                 end %if raw_data is not empty
             end %end second iXY loop
         end % end of binarize_robust()
-    end % of methods
+        function arcosDF = Convert_Arcos_Analysis_Data(dataloc, channel, varargin)
+        
+        %treatments existing
+        inp.tstartaftertx = [];
+        inp.tmaxaftertx = [];
+        inp.aftertx = [];
+        inp.exclude = [];
+        inp.txs = {'pTx','Tx1','Tx2','Tx3','Tx4'};
+        
+        inp.boxsize = 30; % how big should the square for "hotspot" detection be? (in uM) (will be boxsize uM by boxsize uM)
+        inp.lmhthresh = [0,3,5]; % how many spreads need to start from a given box to be considered low, medium, or high? (numbers here are the min for that group)
+        inp.smlthresh = [0,0.5,1]; % time thresholds for short, medium, and long spread durations
+        
+        inp.meanreplicates = false; % mean technical replicates?
+        inp.standardize = false; %stdize the data?
+        
+        inp.alreadysizenormalized = true; % is the given data already normalized to uM (rather than pixels, which is the default output of arcos data)
+        
+        inp.varNames = {'exp',     'xy',  'full',  'txinfo', 'rep',   'freq',  'dur',  'maxarea','freq_by_region','region_sizexy','smlthresh','smlfractions'}; % variable names for the table
+        inp.varTypes = {'string','string','string','string','string','double','double','double',      'cell',        'string',      'string',    'double'}; % variable types for the varNames in the table
+        
+        
+        %% Check input varargin parameters
+        nin = length(varargin); if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end %Splits pairs to a structure
+        for s = 1:2:nin; inp.(lower(varargin{s})) = varargin{s+1}; end; clear nin s varargin;
+        
+        if ~isempty(inp.exclude) && ~iscell(inp.exclude); inp.exclude = {inp.exclude}; end
+        if isstruct(dataloc); dataloc = {dataloc}; end % put dataloc in a cell
+        nData = numel(dataloc); % how many datalocs are there
+        if ~iscell(channel); channel = {channel}; end % put channel in a cell
+        if numel(channel) < nData; channel = repmat(channel,1,nData); end % make a channel for every dataloc if you didn't already
+        
+        % Map the treatments for each dataloc
+        arcosDF = table;
+        for iData = 1:nData
+            dHold = dataloc{iData};
+            % Check if dataloc is a dataloc struct or is a path to a dataloc file
+            if isstring(dHold) || ischar(dHold) 
+                dHold = load(dHold);
+                dHold = dHold.dataloc;
+            end
+            dHold = makeArcosDF(dHold, channel{iData}, inp); % make the live cell dataframe
+            arcosDF = [arcosDF; dHold]; % append the dHold dataframe to datalocDF
+            clear dHold;
+        end 
+        
+        end % ARCOS Dataframe constructor
+        
+        function arcosDataFrame = makeArcosDF(dataloc, channel, inp)
+        
+        %% Set up everything for analysis
+        
+        inp.tktm = 60/dataloc.movieinfo.tsamp; %set up how many tps per hour
+        if ~isempty(inp.tstartaftertx);  inp.tstartaftertx = floor(inp.tstartaftertx * inp.tktm); end 
+        if ~isempty(inp.tmaxaftertx); inp.tmaxaftertx = floor(inp.tmaxaftertx * inp.tktm); end %convert respond time from hours to tps
+        
+        txData = ct_maptx(dataloc.platemapd.idx,'time',false,'reduce',false,'expar',inp.txs);
+        txNames = fieldnames(txData);
+        
+        if ~isempty(inp.exclude)
+            for iExclude = 1:numel(inp.exclude)
+                tossThese = contains(txNames,inp.exclude{1});
+                tossThese = txNames(tossThese);
+                txData = rmfield(txData,tossThese);
+                clear tossThese;
+            end
+            txNames = fieldnames(txData);
+        end
+        
+        arcosDataFrame = table('Size',[0,numel(inp.varNames)],'VariableNames',inp.varNames,'VariableTypes', inp.varTypes); % set up the arcos dataframe
+        
+        %% Set up squares for hotspot detection
+        
+        if inp.alreadysizenormalized % if the arcos data is already normalized to uM for coordinates 
+            xTrueBox = inp.boxsize; % how many uM should a box be (in the x)? uM already
+            yTrueBox = inp.boxsize; % how many uM should a box be (in the y)? uM already
+            xuMsize = dataloc.movieinfo.PixNumX * dataloc.movieinfo.PixSizeX; % how big is the x (in uM)
+            yuMsize = dataloc.movieinfo.PixNumY * dataloc.movieinfo.PixSizeY; % how big is the y (in uM)
+            xBoxes = (0:xTrueBox:xuMsize); % box range for x in uM
+            yBoxes = (0:yTrueBox:yuMsize); % box range for y in uM
+        
+        else % if the arcos data is NOT already normalized to uM for coordinates 
+            xTrueBox = round(inp.boxsize / dataloc.movieinfo.PixSizeX); % how many pixels are in a p.boxsize uMs (in the x)? must be converted from uM to pixels 
+            yTrueBox = round(inp.boxsize / dataloc.movieinfo.PixSizeY); % how many pixels are in a p.boxsize uMs (in the y)? must be converted from uM to pixels
+            xBoxes = (0:xTrueBox:dataloc.movieinfo.PixNumX); % box range for x in pixels
+            yBoxes = (0:yTrueBox:dataloc.movieinfo.PixNumY); % box range for y in pixels
+        end % make the boxes for the hotspot measurements 
+        
+        edgesForYou = {xBoxes,yBoxes}; % put em together
+        
+        
+        %% Loop through the treatments
+        for iTx = 1:size(txNames,1)
+            tTx = txNames{iTx};
+            repCounter = 0;
+            tempDF = table('Size',[0,numel(inp.varNames)],'VariableNames',inp.varNames,'VariableTypes', inp.varTypes); % set up temp arcos dataframe
+        
+            for iXY = txData.(tTx).xy'
+                if ~isempty(dataloc.(['arcos_',channel])(iXY)) && ~isempty(dataloc.(['arcos_',channel]){iXY})
+                
+                repCounter = repCounter + 1; % go up in rep
+        
+                tempDF2 = table('Size',[1,numel(inp.varNames)],'VariableNames',inp.varNames,'VariableTypes', inp.varTypes); % set up temp arcos dataframe
+                
+                tempDF2.rep = repCounter; % assign rep number
+                tempDF2.exp = dataloc.file.base; % assign the experiment name
+                tempDF2.xy = num2str(iXY); % the xy
+                tempDF2.full = replace(tTx,'_',' + '); % add the full sorted name
+                % tempDataFrame.cell = mappedTxs.(use2Map{iMap}).tx(1).name; % I currently don't care about density stuff FIX?
+                % thisTx = structfun(@(x) ismember(iXY,x.xy),txInfo); % get a logical for the tx
+        
+                tempDF2.region_sizexy = [num2str(xTrueBox),', ',num2str(yTrueBox)]; % add the box sizes for hot spot info
+                %tempDF2.lmhthresh = [num2str(inp.lmhthresh(1)),', ',num2str(inp.lmhthresh(2)),', ',num2str(inp.lmhthresh(3))]; % add the thresholds for low, medium, and hot spot info
+                tempDF2.smlthresh = [num2str(inp.smlthresh(1)),', ',num2str(inp.smlthresh(2)),', ',num2str(inp.smlthresh(3))]; % add the thresholds for short, medium, and long spread info
+        
+                allTxs = [txData.(tTx).tx.time]'; % get the treatment times
+                allTxs = allTxs(allTxs > 0); % ignore pretreatments
+                % get the tp of the last treatment (or otherwise)
+                if isempty(allTxs); tStart = 1;
+                else
+                    if ~isempty(inp.aftertx)
+                        if numel(allTxs) < inp.aftertx; tStart = allTxs(end);
+                        else; tStart = allTxs(inp.aftertx);
+                        end
+                    else; tStart = allTxs(end);
+                    end
+                end
+        
+                if ~isempty(inp.tmaxaftertx) % adjust max time considered
+                    if (tStart + inp.tmaxaftertx) > size(dataloc.d{iXY}.data.XCoord,2)
+                        tEnd = size(dataloc.d{iXY}.data.XCoord,2);
+                    else; tEnd = tStart + inp.tmaxaftertx;
+                    end
+                else; tEnd = size(dataloc.d{iXY}.data.XCoord,2);
+                end
+        
+                if ~isempty(inp.tstartaftertx) %adjust t start 
+                    if (inp.tstartaftertx + tStart) > tEnd; warning('Your tstart after tx is after the end of your tmax after tx, ignoring tstart after tx');
+                    else; tStart = tStart + inp.tstartaftertx;
+                    end
+                end
+        
+                %% Collect all of the treatment info and determine which data are allowed given the times provided
+                txInfo = [txData.(tTx).tx]; %pull the one the xy is a part of and assign it
+                txInfo2 = '';
+                for iTTx = 1:length(txInfo)
+                    txInfo2 = [txInfo2, ' ', num2str(txInfo(iTTx).dose),txInfo(iTTx).dunit, ' ', txInfo(iTTx).name];
+                end
+                txInfo2 = txInfo2(2:end);
+                tempDF2.txinfo = {txInfo2}; % NOW put it into the dataframe
+                
+                aData = dataloc.(['arcos_',channel]){iXY}; % pull that xys arcos data
+        
+                sStart = [aData.t_start]'; % get when spreads start
+                sEnd = [aData.t_end]'; %when spreads end
+        
+                sGoodRange(:,1) = (tStart < sStart); % only keep data that falls within the allowed time span
+                sGoodRange(:,2) = (sEnd < tEnd); % only keep data that falls within the allowed time span
+                sGoodRange = all(sGoodRange,2); % only keep data that falls within the allowed time span
+        
+                aData = aData(sGoodRange); % keep the arcos data that falls in the given range
+        
+                %% calculate SPREAD freq
+                a = sum(sGoodRange); % take how many spreads occur in the given time 
+                a = a / ((tEnd - tStart) / inp.tktm); % and divide it all by the allowed time span
+                a = a / (xuMsize * yuMsize);  % x um/px * numXpix * y um/px * numYpix normalize the data for the image size
+                tempDF2.freq = a * 1000000; %  * 10^6 (convert um^2 to mm^2) and append the data
+                clear a;
+        
+                %% Divide the image into inp.boxsize um x inp.boxsize um regions and get the spread "rate" (spreads per hr) per square for that image
+                a = {aData.data}'; % get the spread data
+                a = cellfun(@(x){nanmean(x(1).XYCoord,1)},a); 
+                a = cell2mat(a); % get the first xy of the spread
+                if isempty(a); a = [1,1]; end
+                h = histogram2(a(:,1),a(:,2),'XBinEdges',edgesForYou{1},'YBinEdges',edgesForYou{2});
+                countz = h.Values(:); % pull the counts per square from the data
+                close(gcf)
+                tempDF2.freq_by_region = {(countz / ((tEnd - tStart) / inp.tktm))'}; % get the fraction of counts per group (out of all squares)
+                clear a h countz totalSegs;
+        
+                %% mean and distribution of spread durations
+                a = [aData.dur]' / inp.tktm; % get the durs and make them into hours
+                totalSegs = [((inp.smlthresh(1) < a) & (a <= inp.smlthresh(2))), ((inp.smlthresh(2) < a) & (a <= inp.smlthresh(3))),inp.smlthresh(3) < a];
+                tempDF2.smlfractions = sum(totalSegs,1)/length(a); % what fraction of spreads are short vs medium vs long
+                tempDF2.dur = mean(a,'all','omitnan'); % get the mean duration of spreads and append the data
+                clear totalSegs a;
+        
+                %% mean max spread size
+                a = [aData.maxarea]'; %get the spread data
+                if ~inp.alreadysizenormalized
+                    a = a * (dataloc.movieinfo.PixSizeX * dataloc.movieinfo.PixSizeY);  % x um/px  * y um/px 
+                end
+                tempDF2.maxarea = mean(a,'all','omitnan'); % get the mean max spread size and append the data
+                clear a;
+                
+                clear sGoodRange;
+        
+                if inp.meanreplicates
+                    tempDF = [tempDF; tempDF2];
+                else; arcosDataFrame = [arcosDataFrame; tempDF2];
+                end
+        
+                end % empty d{} check
+            end % xy loop
+        
+            %% Mean the replicates if desired
+            if inp.meanreplicates && ~isempty(tempDF)
+                arcosDataFrame = [arcosDataFrame; tempDF(1,:)]; %transfer the info from the first xy in the list (exp, full, txinfo, rep, lmhthresh, boxsizexy, smlthresh)
+                arcosDataFrame.xy(end) = join([tempDF.xy]', ', ');
+                arcosDataFrame.freq(end) = mean(tempDF.freq,1,'omitnan');
+                fbr = cell2mat(tempDF.freq_by_region);
+                arcosDataFrame.freq_by_region{end} = {fbr(:)'}; clear fbr;
+                arcosDataFrame.dur(end) = mean(tempDF.dur,1,'omitnan');
+                arcosDataFrame.smlfractions(end,:) = mean(tempDF.smlfractions,1,'omitnan');
+                arcosDataFrame.maxarea(end) = mean(tempDF.maxarea,1,'omitnan');
+            end
+        
+        end %tx loop
+        
+        if exist('arcosDataFrame','var')
+            if inp.standardize
+                arcosDataFrame = (arcosDataFrame-nanmean(arcosDataFrame))./std(arcosDataFrame,'omitnan'); %standardize vals
+            end
+        else; arcosDataFrame =[];
+        end
+        end % makeArcosDF function% of methods
+    end
+    
 end
