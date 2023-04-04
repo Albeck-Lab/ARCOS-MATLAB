@@ -117,6 +117,7 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 			warnings(time).too_sparse = "High Epsilon. Check data for low cell density";
 		end % Warning if epsilon is abnormally high
 		%%Setup and run Clustering
+<<<<<<< Updated upstream
         activeXY = [XCoord(bin(:,time),time), YCoord(bin(:,time),time)]; %XY coordinates for active cells EDIT FIX ND - this can give a nan?      
         cdata(time).untracked = clustering(activeXY, epst, minptst);
         %%Track if possible
@@ -126,6 +127,34 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
             cdata(time).tracked = [];
 		else
             [cdata(time).tracked, newmax] = tracking(cdata(time).untracked,cdata(time-1).tracked,cdata(time-1).untracked,epst,newmax);
+=======
+        activeXY = [XCoord(bin(:,time),time), YCoord(bin(:,time),time)]; %XY coordinates for active cells
+        nanmap = isnan(activeXY);
+        activeXY = [activeXY(~nanmap(:,1),1),activeXY(~nanmap(:,2),2)];
+        [cdata(time).untracked,cdata(time).untracked2] = clustering(activeXY, epst, minptst);
+        %%Track if possible
+        if cdata(time).untracked(end).id==0 %No active points, no clusters
+            cdata(time).tracked = [];
+        end
+		if time>1
+             %{
+            %% Reassign cluster IDs
+            if isempty(cdata(time-1).tracked)
+                for q = 1:size(cdata(time).untracked,2)
+                    cdata(time).untracked(q).id = cdata(time).untracked(q).id + newmax;
+                end
+                newmax = max(unique([cdata(time).untracked.id]));
+            end
+            %}
+            [cdata(time).tracked, newmax] = tracking(cdata(time).untracked,cdata(time-1).tracked,cdata(time-1).untracked,epst,newmax);
+            %tracking2(cdata(time).untracked2,cdata(time-1).tracked,cdata(time-1).untracked2,epst,newmax)
+        else
+            newmax = max([cdata(time).untracked.id]);
+            cdata(time).tracked = cdata(time).untracked;
+            for ind = 1:size(cdata(time).tracked,2)
+                cdata(time).tracked(ind).id = [cdata(time).tracked(ind).id,cdata(time).tracked(ind).id];
+            end
+>>>>>>> Stashed changes
 		end
         cdata(time).eps = epst;
         cdata(time).minpts = minptst;
@@ -137,17 +166,30 @@ function [cdata,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 		disp("See the 'warnings' output for more information")
 	end
 end
+<<<<<<< Updated upstream
 function out = clustering(activeXY, eps, minpts)
     out = struct('XYCoord',0,'id',0);
     if isempty(activeXY); return; end
     clusters = dbscan(activeXY, eps, minpts);
     outliers = clusters < 0;
+=======
+function [out,out2] = clustering(activeXY, eps, minpts)
+    out = struct('XYCoord',0,'id',0);
+    if isempty(activeXY); return; end
+    clusters = dbscan(activeXY, eps, minpts);
+    outliers = clusters == -1;
+>>>>>>> Stashed changes
     max_clust_id = max(clusters(~outliers));
     if isempty(max_clust_id); max_clust_id=0; end
     sum_outliers = sum(outliers);
     fake_clust = max_clust_id+1:max_clust_id+sum_outliers;
     clusters(outliers) = fake_clust';
+<<<<<<< Updated upstream
 
+=======
+    out2.id = clusters;
+    out2.XYCoord = activeXY;
+>>>>>>> Stashed changes
     for cl = 1:max(clusters)
         pts = activeXY(clusters==cl,:);
         out(cl).XYCoord = pts; % XYCoord in that cluster
@@ -159,23 +201,52 @@ function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
     dCurr = unpack(sCurr); %XY and ID for clusters in curr
     dPrev = unpack(sPrev); %XY and ID for clusters in prev
     %%Check if the requisite data is present
+<<<<<<< Updated upstream
     if numel(dPrev)<=3 
         dPrev = unpack(bPrev);
     end
+=======
+    
+    if numel(dPrev)<3 
+        dPrev = unpack(bPrev);
+        dPrev(:,3) = dPrev(:,3) + newmax;
+    end
+    %{
+>>>>>>> Stashed changes
     if numel(dCurr)<=3 
         tracks = []; %If no data, return empty
         return
     end
+<<<<<<< Updated upstream
+=======
+    %}
+>>>>>>> Stashed changes
     %%Search neighbors and reassign
     [idx,d] = knnsearch(dPrev(:,1:2),dCurr(:,1:2)); %Indices and distances of current's neighbors in previous
     isClose = d <= eps;
     dCurr(isClose,4)= dPrev(idx(isClose),3);
+<<<<<<< Updated upstream
     for i = 1:max(dCurr(:,3))
         cluster = dCurr(:,3)==i;        %Logical map for points in currently evaluated cluster
         id = dCurr(cluster,3:4);        %cluster ids for those points
         n = numel(unique(id(id(:,2)>0,2)));         %Get the number of unique cluster ids for the current cluster >0 (non-ignored)
         if n > 1                            %more than one past cluster
             dCurr(cluster,5) = 0; 
+=======
+    uniqueClusterIDs = unique(dCurr(:,3))';
+    for i = uniqueClusterIDs
+        cluster = dCurr(:,3)==i;        %Logical map for points in currently evaluated cluster
+        id = dCurr(cluster,3:4);        %cluster ids for those points
+        n = numel(unique(id(id(:,2)>0,2)));         %Get the number of unique cluster ids for the current cluster >0 (non-ignored)
+
+        % The fifth column is a flag for whether reassignment has occurred.
+        % 0 if no reassignment, 1 if reassignment
+        if n > 1                            %more than one past cluster
+            %Do nothing?
+            %Won't the cluster IDs conflict later on?
+            dCurr(cluster,5) = 0; 
+            
+>>>>>>> Stashed changes
         elseif n == 1                       %One past cluster
             dCurr(cluster,4) = unique(id(id(:,2)>0,2));
             dCurr(cluster,5) = 0;
@@ -183,7 +254,11 @@ function [tracks,newmax] = tracking(sCurr,sPrev,bPrev,eps,newmax)
             if max(max(dCurr(:,4)))+1 > newmax
                 newmax = max(max(dCurr(:,4)))+1;
             end
+<<<<<<< Updated upstream
             dCurr(cluster,4)= newmax;
+=======
+            dCurr(cluster,4) = newmax;
+>>>>>>> Stashed changes
             dCurr(cluster,5) = 1;
         end
     end
@@ -223,7 +298,36 @@ function xy = unpack(d)
     end
     xy(1,:) = [];
 end %unpack function end
+<<<<<<< Updated upstream
 
 
 
 %%Check tracking flag for new cluster assignments
+=======
+function tracks = tracking2(current,previousTracked,previousUntracked,eps,newmax)
+    tracks = current.id;
+    if numel(previousTracked) < 2 % FIXME This is a placeholder check that may not work
+        previous = previousUntracked;
+    else
+        previous = previousTracked;
+    end
+
+    %%Search neighbors and reassign
+    [idx,d] = knnsearch(previous.XYCoord(:,1:2),current.XYCoord(:,1:2)); %Indices and distances of current's neighbors in previous
+    close = d <= eps;
+    tracks(close) = previous.id(idx(close));
+    currentIDsUnique = unique(current.id)';
+    for i = currentIDsUnique
+        clusterCurrentMap = current.id==i;        %Logical map for points in currently evaluated cluster
+        id = tracks(clusterCurrentMap);       %cluster ids for those points
+        n = numel(unique(id));         %Get the number of unique cluster ids for the current cluster >0 (non-ignored)
+        if sum(id)==0
+            if max(tracks)+1 > newmax
+                newmax = max(max(dCurr(:,4)))+1;
+            end
+            tracks(clusterCurrentMap) = newmax;
+        end
+    end
+
+end
+>>>>>>> Stashed changes
