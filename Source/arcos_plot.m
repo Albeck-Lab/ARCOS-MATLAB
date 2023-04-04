@@ -107,9 +107,11 @@ classdef arcos_plot
                 p.(lower(varargin{s})) = varargin{s+1};   
             end
             if p.usebounds == true
+                %{
                 if isempty(clust_by_id{xy(1)}(1).data(1).bounds) %This will bug out if there's no data in clust_by_id{1}
                     error('No bounds detected in data. Have you run analysis yet?')
                 end
+                %}
             end
             %%Set up environment
             mkdir(p.outpath); %Make outpath if it doesn't exist

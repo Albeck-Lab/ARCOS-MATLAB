@@ -275,24 +275,6 @@ classdef arcos_utils
             [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
             eps = max_d(ix);
         end 
-%         function [eps,minpts] = prep_dbscan2(XCoord, YCoord, time)
-%             minpts = ndims(XCoord)*2; %Minpts defined by dimensionality of data
-%             vals = zeros(1,length(time)); %Preallocation of data
-%             for it = 1:numel(time)
-%                 t = time(it);
-%                 [~,d] = knnsearch([XCoord(:,t),YCoord(:,t)], [XCoord(:,t), YCoord(:,t)],'K', minpts+1); %k-nearest neighbors search
-%                 d = max(d,[],2); %Biased toward greater distances of k-nearest
-%                 max_d = sort(d);
-%                 scaled = max_d * length(max_d)/max(max_d); %Scale the data
-%                 smoothed = smoothdata(scaled,'gaussian'); %Smooth it
-%                 slopes = gradient(smoothed); %Take first derivative
-%                 [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
-%                 eps = max_d(ix); %Set epsilon to the value of max_d at index ix
-%                 vals(it) = eps; %Store eps in vals
-%             end
-%             real = ~isnan(vals); %Logical map of values ~= NaN
-%             eps = mean(vals(real)); %Mean of non-NaN epsilon values
-%         end
     function [eps,minpts] = prep_dbscan2(XCoord,YCoord,bin,varargin)
 			inp.n = 11;
 			nin = length(varargin);
@@ -454,15 +436,17 @@ classdef arcos_utils
 				eps = cdata(time).eps;
 				minpts = cdata(time).minpts;
 				dtp = cdata(time).tracked; %dtp = data at timepoint
-				for cluster = 1:size(dtp,2)
-					id = mode(dtp(cluster).id(:,2));
-					clusters(id).cid = id;
-					clusters(id).data(time).time = time;
-					clusters(id).data(time).XYCoord = dtp(cluster).XYCoord;
-					clusters(id).data(time).id = dtp(cluster).id;
-					clusters(id).data(time).eps = eps;
-					clusters(id).data(time).minpts = minpts;
-				end
+                if max([dtp(end).id]) > 0 % EDIT FIX HI ITS NICK BREAKING STUFF
+                    for cluster = 1:size(dtp,2)
+					    id = mode(dtp(cluster).id(:,2));
+					    clusters(id).cid = id;
+					    clusters(id).data(time).time = time;
+					    clusters(id).data(time).XYCoord = dtp(cluster).XYCoord;
+					    clusters(id).data(time).id = dtp(cluster).id;
+					    clusters(id).data(time).eps = eps;
+					    clusters(id).data(time).minpts = minpts;
+                    end
+                end
 			end
 			%%Loop through substructs and remove empty entries
 			for i = 1:size(clusters,1)  
