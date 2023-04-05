@@ -9,11 +9,11 @@
 % * *YCoord* - |Double array| - Y coordinates of tracked cells
 % * *bin* - |Logical array| - binary data
 % * *_varargin_* - |Option-value pairs| - Accepts optional inputs as
-% option-value pairs. Ex: 'eps', 60
+% option-value pairs. Ex: 'epsilon', 60
 %
 % *Optional Inputs*
 %
-% * *eps* - |Double| - Optional epsilon value for DBSCAN. Automatically
+% * *epsilon* - |Double| - Optional epsilon value for DBSCAN. Automatically
 % calculated if left empty.
 % * *minpts* - |Integer| - Optional minpts value for DBSCAN. Automatically
 % calculated if left empty.
@@ -30,7 +30,7 @@
 % *Inputs*
 %
 % * *activeXY* - |Double array| - X and Y coordinates for active cells
-% * *eps* - |Double| - Epsilon value for DBSCAN
+% * *epsilon* - |Double| - epsilon value for DBSCAN
 % * *minpts* - |Integer| - Minpts value for DBSCAN
 % * _varargin_ - |Option-value pair| - Accepts addition inputs as
 % option-value pairs. Ex 'debug', true. 
@@ -59,16 +59,16 @@
 % cluster data
 % * *bPrev* - |Struct| - Struct containing the previously indexed untracked
 % cluster data
-% * *eps* - |Double| - Epsilon value used to cluster the currently indexed
+% * *epsilon* - |Double| - epsilon value used to cluster the currently indexed
 % data. Used in knnsearch algorithm
-% * *newmax* - |Integer| - Max cluster ID assigned in the _previous_ tracking
+% * *maxLabel* - |Integer| - Max cluster ID assigned in the _previous_ tracking
 % iteration
 %
 % *Outputs*
 %
 % * *tracks* - |Struct| - Structure containing XY coordinates, cluster ID
 % lineage and a flag indicating whether a cluster reassignment is unique
-% * *newmax* - |Integer| - Max cluster ID assigned in the _current_ tracking
+% * *maxLabel* - |Integer| - Max cluster ID assigned in the _current_ tracking
 % iteration
 %
 %% Unpack
@@ -90,44 +90,49 @@
 %% See also
 % dbscan, knnsearch
 function [labelTracked,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
-	p.eps = [];
+
+	%Set default parameters
+	p.epsilon = [];
 	p.minpts = [];
 	p.verbose = true;
 	p.debug = false;
 	p.well = [];
 	p.pixsize = [1 1];
+
+	%Parse inputs
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
 
+	[nCells, nTime] = size(XCoord);
 
-	runPrep = [isempty(p.eps), isempty(p.minpts)];
-    %%Preallocate cdata, initialize newmax, preallocate warnings
-    newmax = 0;
+	runPrep = [isempty(p.epsilon), isempty(p.minpts)];
+    %%Preallocate cdata, initialize maxLabel, preallocate warnings
+    maxLabel = 0;
 	
 	warnings = struct('too_sparse',{});
 
-
+	%Scale coordinates to calibrated dimensions
     XCoord = XCoord.*p.pixsize(1);
     YCoord = YCoord.*p.pixsize(2);
 	
-	allActive = {};
+	allActive = cell(1,nTime);
 	labelUntracked = zeros(size(XCoord));
 	labelTracked = zeros(size(XCoord));
-	eps = zeros([size(XCoord,2),1]);
-	minpts = zeros([size(XCoord,2),1]);
+	epsilon = zeros([nTime,1]);
+	minpts = zeros([nTime,1]);
 
 	%%Time loop
-	for time = 1:size(XCoord,2)
-		%%Setup: Eps and Minpts
-		if any(runPrep); [eps(time),minpts(time)] = arcos_utils.prep_dbscan2(XCoord(:,time),YCoord(:,time),bin(:,time)); end
-		if ~runPrep(1);  eps(time) = p.eps;  end  %Override with user-provided eps
+	for time = 1:nTime
+		%%Setup: epsilon and Minpts
+		if any(runPrep); [epsilon(time),minpts(time)] = arcos_utils.prep_dbscan2(XCoord(:,time),YCoord(:,time),bin(:,time)); end
+		if ~runPrep(1);  epsilon(time) = p.epsilon;  end  %Override with user-provided epsilon
 		if ~runPrep(2);  minpts(time) = p.minpts; end  %Override with user-provided minpts
 
 
-		%%Log warning if eps is abnormal
-		if eps(time) >150
-			warnings(time).too_sparse = "High Epsilon. Check data for low cell density";
+		%%Log warning if epsilon is abnormal
+		if epsilon(time) >150
+			warnings(time).too_sparse = "High epsilon. Check data for low cell density";
 		end % Warning if epsilon is abnormally high
 		
 		
@@ -136,7 +141,7 @@ function [labelTracked,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 		active = bin(:,time);
         activeXY = [XCoord(active,time), YCoord(active,time)];
 		allActive{time} = activeXY;
-        labelUntracked(active,time) = clustering(activeXY, eps(time), minpts(time));
+        labelUntracked(active,time) = clustering(activeXY, epsilon(time), minpts(time));
 		
 
         %%Track if possible
@@ -148,17 +153,18 @@ function [labelTracked,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 				labelTracked(:,time-1),...
 				allActive{time},...
 				allActive{time-1},...
-				eps(time),newmax);
+				epsilon(time),maxLabel);
 		else
             labelTracked(active,time) = labelUntracked(active,time);
 		end
-		newmax = max(labelTracked(active,time));
+		%Update record of maximum cluster ID across this frame
+		maxLabel = max(labelTracked(:));
 	end
 
 
-	num_high_eps = numel([warnings(:).too_sparse]);
-	if num_high_eps > 0 && p.verbose
-	    warning(append("Well: ", string(p.well), " - ", string(num_high_eps), ' timepoints had higher than expected epsilon values and may not cluster well'))
+	num_high_epsilon = numel([warnings(:).too_sparse]);
+	if num_high_epsilon > 0 && p.verbose
+	    warning(append("Well: ", string(p.well), " - ", string(num_high_epsilon), ' timepoints had higher than expected epsilon values and may not cluster well'))
 	    disp("See the 'warnings' output for more information")
 	end
 
@@ -166,9 +172,15 @@ function [labelTracked,warnings] = arcos_core(XCoord,YCoord,bin,varargin)
 end
 
 
-function label = clustering(activeXY, eps, minpts)
-    if isempty(activeXY); return; end
-    label = dbscan(activeXY, eps, minpts);
+function label = clustering(activeXY, epsilon, minpts)
+	%Short-circuit on empty input
+    if isempty(activeXY)
+		label = [];
+		return; 
+	end
+	%Perform main dbscan clustering
+    label = dbscan(activeXY, epsilon, minpts);
+	%Catch outliers and make single-point clusters
     outliers = label == -1;
     maxID = max(label(~outliers));
     if isempty(maxID); maxID=0; end
@@ -177,33 +189,57 @@ function label = clustering(activeXY, eps, minpts)
 end
 
 
-function labelTracked = tracking(currentUntracked,previousTracked,currentXY,previousXY,eps,newmax)
-    labelTracked = currentUntracked;
+function labelTracked = tracking(currentUntracked,previousTracked,currentXY,previousXY,epsilon,maxLabel)
+	labelTracked = zeros(size(currentUntracked)); %FIXME - Maybe not initialize, because Untracke labels are not 
+	%	constrained with respect to previous tracked labels.  Could randomly equal previous labels?
 
-    [idxPreviousNeighbors,dPreviousNeighbors] = knnsearch(previousXY(:,1:2),currentXY(:,1:2)); %Indices and distances of current's neighbors in previous
-    close = dPreviousNeighbors <= eps; %Distances for neighbors within epsilon
-	idxPreviousClose = idxPreviousNeighbors(close);
-	labelPreviousClose = previousTracked(idxPreviousClose); %Cluster labels of previous points within eps of each current point
-	
+	%Get indices and distances of current points' neighbors in previous frame
+    [idxPreviousNeighbors,dPreviousNeighbors] = knnsearch(previousXY,currentXY); 
+    isClose = dPreviousNeighbors <= epsilon; 	%Flag if neighbors are within epsilon
+	%	Assign current point the cluster label of nearest previous point, IF within epsilon
+	idxPreviousClose = idxPreviousNeighbors(isClose);
+	labelTracked(isClose) = previousTracked(idxPreviousClose); 
 
-	currentLabelUnique = unique(currentUntracked)';
-    for i = currentLabelUnique
-        clusterCurrentMap = currentUntracked==i;
-		ilabelCurrent = currentUntracked(clusterCurrentMap);       %cluster ids for those points
+	currentLabelUnique = unique(currentUntracked)';  %Get list of current cluster labels
+    for i = currentLabelUnique  	%Operating cluster-by-cluster
+        clusterCurrentMask = currentUntracked==i;  %Mask of points in this Cluster
 
+		%Get (unique) list of new Labels mapped to this Cluster
+		newLabelList = unique( labelTracked(clusterCurrentMask) );
+		newLabelList = newLabelList(newLabelList > 0);
 
+		nNew = length(newLabelList);  %Number of Labels mapped to this Cluster
 
+		%Adjust Label assignments to be consistent across current Clusters
+		if nNew == 0  		%IF mapped to no past Clusters
+			%Initialize a new Cluster Label and assign to all points in this Cluster
+			maxLabel = maxLabel + 1;
+			labelTracked(clusterCurrentMask) = maxLabel;
 
+		elseif nNew == 1  	%IF only one past Cluster is mapped
+			%Assing ALL points in this Cluster to that Label (including points mapped to nothing)
+			labelTracked(clusterCurrentMask) = newLabelList;
+			
+		elseif nNew > 1		%IF this Cluster maps to multiple past Clusters
+			%Make linear index mask of previous Labels mapped to this Cluster
+			prevMask = find(ismember(previousTracked,newLabelList));  
+			%Get indices of (previous) nearest neighbors to points in this Cluster
+			idxPrev = knnsearch(previousXY(prevMask,:), currentXY(clusterCurrentMask,:));
+			%Assign each point to the cluster of its nearest neighbor (only from newLabelList...)
+			labelTracked(clusterCurrentMask) = previousTracked(prevMask(idxPrev));
+		end
 
-        
-        n = numel(unique(id));         %Get the number of unique cluster ids for the current cluster
-        if sum(id)==0
-            if max(labelTracked)+1 > newmax
-                newmax = max(max(dCurr(:,4)))+1;
-            end
-            labelTracked(clusterCurrentMap) = newmax;
-        end
     end
 
+    %Warn the user if zeros present in output labels (tracking loss and dropped points)
+    if any(labelTracked==0)
+        warning(append(str(sum(labelTracked==0)),"Zeros detected in tracking. Possible tracking loss"))
+    end
+
+
 end
+
+
+
+
 
