@@ -436,7 +436,7 @@ classdef arcos_utils
 				eps = cdata(time).eps;
 				minpts = cdata(time).minpts;
 				dtp = cdata(time).tracked; %dtp = data at timepoint
-                if max([dtp(end).id]) > 0 % EDIT FIX HI ITS NICK BREAKING STUFF
+                if ~isempty(dtp) % EDIT FIX HI ITS NICK BREAKING STUFF
                     for cluster = 1:size(dtp,2)
 					    id = mode(dtp(cluster).id(:,2));
 					    clusters(id).cid = id;
