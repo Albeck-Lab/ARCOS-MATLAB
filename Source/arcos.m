@@ -46,6 +46,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 	clust_by_time = cell(1,numel(xy));
 	clust_by_id = cell(1,numel(xy));
 	binaries = cell(1,numel(xy));
+	optionalOuts = cell(1,numel(xy));
 	warnings = struct('frame_warnings',{},'excess_nans',{});
 	%% Check XYs
 	goodxys = ~arrayfun(@(x)isempty(data{x}),xy);% check to see if the input xys are good
@@ -86,7 +87,10 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
 		if numel(p.minpts) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
         %%Do the arcos functions
         %[clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
-		[~,warnings{well}.frame_warnings,clust_by_time{well}] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
+		
+		[~,warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
+		optionalOuts{well} = optionalOut;
+		clust_by_time{well} = optionalOut{6};
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
 		
 		binaries = bin;
