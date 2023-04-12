@@ -170,7 +170,7 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 	    disp("See the 'warnings' output for more information")
 	end
 	optionalOut = {};
-	optionalOut{1} = allActive;
+	optionalOut{1} = allActive; %Per-timepoint vectors 
 	optionalOut{2} = labelUntracked;
 	optionalOut{3} = epsilon;
 	optionalOut{4} = minpts;

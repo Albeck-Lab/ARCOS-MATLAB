@@ -88,7 +88,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
         %%Do the arcos functions
         %[clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
 		
-		[~,warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
+		[~,warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'epsilon',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
 		optionalOuts{well} = optionalOut;
 		clust_by_time{well} = optionalOut{6};
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
