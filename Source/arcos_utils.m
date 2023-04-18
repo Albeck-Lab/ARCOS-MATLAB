@@ -427,6 +427,149 @@ classdef arcos_utils
                 end
             end %end well loop
 		end 
+
+
+
+		function [spreadTable,x,y,bin,lbls] = gensynthV2(varargin)
+			% Grid code adapted from stackoverflow user Wolfie
+			% https://stackoverflow.com/questions/43091943/construct-grid-of-points-in-matlab
+		
+			warning("off",'MATLAB:table:RowsAddedExistingVars')
+    		%% Optional Parameters
+    		p.duration = 100; %Desired time series duration in total
+    		p.gridSizeX = 1200;
+    		p.gridSizeY = 1200;
+    		p.spacing = 20; %How far apart the cells are from each other
+    		p.spreads = 100; %How many spreads occur per cycle
+    		p.dist = 20; %Distance the spread grows per frame
+    		p.seed = []; %Optional seed value for random number generator
+    		p.lifetime = 3;
+			p.usehotspots = false;
+    		nin = length(varargin);     %Check for even number of add'l inputs
+    		if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option-value pairs'); end%Splits pairs to a structure
+    		for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
+		
+			duration = p.duration;
+			gridSizeX = p.gridSizeX;
+			gridSizeY = p.gridSizeY;
+			spacing = p.spacing;
+			spreads = p.spreads;
+			dist = p.dist;
+			seed = p.seed;
+			lifetime = p.lifetime;
+			usehotspots = p.usehotspots;
+			
+    		
+    		%% Set up coordinates
+    		gridX = 0+spacing:spacing:gridSizeX;
+    		gridY = 0+spacing:spacing:gridSizeY; %-spacing %why was -spacing in there?
+    		[x, y] = meshgrid(gridX, gridY);
+    		x = x(:); y = y(:);
+    		x = repmat(x,1,duration);
+    		y = repmat(y,1,duration);
+    		bin = false(size(x,1),duration);
+    		%% Seed random number generator
+    		if ~isempty(seed)
+				seed = mean(double(evalc('disp(seed)')));
+				rng(seed);
+    		end
+    		
+			if usehotspots
+				numXPoints = gridSizeX / spacing;
+				numYPoints = gridSizeY / spacing;
+				hsX = 5:10:numXPoints;
+				hsY = 5:10:numYPoints;
+				hsX = hsX*numXPoints;
+				hxY = hsY*numYPoints;
+			end
+    		spreadTable = table();
+    		startTimes = randi(duration-5,[1,spreads]);
+    		startTimes = sort(startTimes);
+    		% Loop through the time series and grow ONE spread at a time
+    		lbls = zeros(size(x,1),duration);
+    		for spread = 1:spreads
+        		startTime = startTimes(spread);
+				if usehotspots
+					startX = randi(length(hsX));
+					startY = randi(length(hsY));
+					startCoords = [x(hsX(startX)),y(hsY(startY))];
+					startIdx = find(and(x(:,1)==startCoords(1),y(:,1)==startCoords(2)));
+				else
+					startIdx = randi(size(x,1));
+					startCoords = [x(startIdx,startTime),y(startIdx,startTime)];
+				end
+        		
+        		bin(startIdx,startTime)=1;
+        		lbls(startIdx,startTime) = spread;
+        		spreadTable.ID(spread) = spread;
+        		spreadTable.StartTime(spread) = startTime;
+        		spreadTable.EndTime(spread) = startTime+lifetime;
+        		spreadTable.StartCoords(spread,:) = startCoords;
+        		sz = 0;
+        		for frame = startTime+1:startTime+1+lifetime
+					if frame > duration; continue; end
+            		nearbyPoints = rangesearch([x(:,frame),y(:,frame)],startCoords,dist+sz);
+            		bin(nearbyPoints{1},frame)=1;
+            		lbls(nearbyPoints{1},frame)=spread;
+            		sz = sz+spacing;
+        		end
+        		spreadTable.MaxCount(spread) = numel(nearbyPoints{1});
+    		end
+		end
+		function clust_by_id = splitSpreads(clust_by_id,negativeDelta)
+		
+			nSpreads = size(clust_by_id,1);
+			clust_by_id_snipped = clust_by_id;
+			maxID = clust_by_id(end).cid;
+			for s = 1:nSpreads
+		
+				data = clust_by_id(s).data;
+		
+				ndata = size(data,1); %number of datapoints
+		
+				%Probaby not necessary but short circuit here if no data
+				if ndata == 0; continue; end 
+		
+				numpts = [data.numpts]';
+				roccount = [data.roccount]';
+				previousCount = numpts+(-roccount);
+				ratioCount = roccount./previousCount;
+		
+				areas = [data.area]';
+				rocarea = [data.rocarea]';
+				previousArea = areas+(-rocarea);
+				ratioArea = rocarea./previousArea;
+		
+				% A sharp negative roccount by itself can occur
+				% when the center of the spread hollows out, leaving a corona of
+				% active cells. 
+		
+				% A sharp negative rocarea by itself can occur when cells shut off
+				% asymetrically, leaving a crescent-shaped spread. 
+		
+				% A snip point should only take place where roccount and rocarea
+				% are *both* negative. 
+				
+				countAndArea = and(ratioArea < negativeDelta, ratioCount < negativeDelta); 
+				
+				if ~any(countAndArea); continue; end  % No timepoints satisfy the conditions, continue
+				
+		
+				snipIdxs = find(countAndArea);
+				for snip = length(snipIdxs):-1:1
+					maxID = maxID+1;
+					clust_by_id_snipped(maxID).cid = maxID;
+					clust_by_id_snipped(maxID).data = data(snipIdxs(snip):end);
+					data(snipIdxs(snip):end) = [];
+				end
+				
+				clust_by_id_snipped(s).data = [];
+				clust_by_id_snipped(s).data = data;
+			end
+			clust_by_id = clust_by_id_snipped;
+		end
+
+
 		function out = reformat(cdata)
 			%%Load data into struct
 			timerange = size(cdata,2);
@@ -460,7 +603,6 @@ classdef arcos_utils
 			end
 			out = clusters;
         end % end of reformat(data)
-		
         function out = binarize_robust(raw_data,xy,ctrl,chan,type,perc)
 			MegaDataHolder = []; %Array of channel data, vertically concatenated
 			if perc > 200 || perc < 0; error('Perc should be a percentage <200, ex 85'); end
