@@ -1,3 +1,4 @@
+
 %% ARCOS Utils (Utilities)
 % Class with various static utility functions
 %
@@ -437,8 +438,8 @@ classdef arcos_utils
 			warning("off",'MATLAB:table:RowsAddedExistingVars')
     		%% Optional Parameters
     		p.duration = 100; %Desired time series duration in total
-    		p.gridSizeX = 1200;
-    		p.gridSizeY = 1200;
+    		p.gridsizex = 1200;
+    		p.gridsizey = 1200;
     		p.spacing = 20; %How far apart the cells are from each other
     		p.spreads = 100; %How many spreads occur per cycle
     		p.dist = 20; %Distance the spread grows per frame
@@ -450,8 +451,8 @@ classdef arcos_utils
     		for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
 		
 			duration = p.duration;
-			gridSizeX = p.gridSizeX;
-			gridSizeY = p.gridSizeY;
+			gridSizeX = p.gridsizex;
+			gridSizeY = p.gridsizey;
 			spacing = p.spacing;
 			spreads = p.spreads;
 			dist = p.dist;
@@ -475,8 +476,8 @@ classdef arcos_utils
     		end
     		
 			if usehotspots
-				numXPoints = gridSizeX / spacing;
-				numYPoints = gridSizeY / spacing;
+				numXPoints = floor(gridSizeX / spacing);
+				numYPoints = floor(gridSizeY / spacing);
 				hsX = 5:10:numXPoints;
 				hsY = 5:10:numYPoints;
 				hsX = hsX*numXPoints;
