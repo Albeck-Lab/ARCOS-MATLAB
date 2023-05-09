@@ -149,12 +149,20 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 		%Tracking is retroactive from the current frame. If the current
 		%frame is the first frame, untracked becomes tracked.
 		if time>1
-            labelTracked(:,time) = tracking(...
+            [labelTracked(:,time),previousTracked] = tracking(...
 				labelUntracked(:,time),...
 				labelTracked(:,time-1),...
 				[XCoord(:,time),YCoord(:,time)],...
 				[XCoord(:,time-1),YCoord(:,time-1)],...
+				allActive{time-1},...
 				epsilon(time),maxLabel);
+
+				%Rectify labelUntracked for previous is start points
+				%detected
+				delta = labelTracked(:,time-1) ~= previousTracked;
+				labelTracked(:,time-1) = previousTracked;
+				
+				labelUntracked(delta,time-1) = previousTracked(delta)+max(labelUntracked(:,time-1));
 		else
             labelTracked(active,time) = labelUntracked(active,time);
 		end
@@ -188,16 +196,21 @@ function label = clustering(activeXY, epsilon, minpts)
 	end
 	%Perform main dbscan clustering
     label = dbscan(activeXY, epsilon, minpts);
+	label(label==-1) = 0; %Change outlier cluster IDs to 0 (unclustered)
 	%Catch outliers and make single-point clusters
+	%REMOVEME - fixing this part in tracking
+	%{
     outliers = label == -1;
     maxID = max(label(~outliers));
     if isempty(maxID); maxID=0; end
     outlierclust = maxID+1:maxID+sum(outliers);
     label(outliers) = outlierclust';
+	%}
 end
 
 
-function labelTracked = tracking(currentUntracked,previousTracked,currentXY,previousXY,epsilon,maxLabel)
+
+function [labelTracked,previousTracked] = tracking(currentUntracked,previousTracked,currentXY,previousXY,previousActive,epsilon,maxLabel)
 	labelTracked = zeros(size(currentUntracked)); %FIXME - Maybe not initialize, because Untracke labels are not 
 	%	constrained with respect to previous tracked labels.  Could randomly equal previous labels?
 	
@@ -224,8 +237,29 @@ function labelTracked = tracking(currentUntracked,previousTracked,currentXY,prev
 
 		%Adjust Label assignments to be consistent across current Clusters
 		if nNew == 0  		%IF mapped to no past Clusters
-			%Initialize a new Cluster Label and assign to all points in this Cluster
+			%{
+				Search again for outlier points (individual active cells) that are 
+				within some radius of the current cluster, and if found, add this/these 
+				point(s) to the previous frame's cluster list, labeled with the 
+				current cluster's newly generated label.
+
+				do inpolygon search
+				if point in polygon
+			%}
 			maxLabel = maxLabel + 1;
+
+			currentX = currentXY(clusterCurrentMask,1);
+			currentY = currentXY(clusterCurrentMask,2);
+			previousX = previousXY(:,1);
+			previousY = previousXY(:,2);
+
+			p = boundary(currentX,currentY);
+			in = inpolygon(previousX,previousY,currentX(p),currentY(p));
+			if numel(previousX(and(in,previousActive))) > 0
+				previousTracked(and(in,previousActive)) = maxLabel;
+			end
+			%Initialize a new Cluster Label and assign to all points in this Cluster
+			
 			labelTracked(clusterCurrentMask) = maxLabel;
 
 		elseif nNew == 1  	%IF only one past Cluster is mapped
