@@ -481,7 +481,7 @@ classdef arcos_utils
 				hsX = 5:10:numXPoints;
 				hsY = 5:10:numYPoints;
 				hsX = hsX*numXPoints;
-				hxY = hsY*numYPoints;
+				%hsY = hsY*numYPoints;
 			end
     		spreadTable = table();
     		startTimes = randi(duration-5,[1,spreads]);

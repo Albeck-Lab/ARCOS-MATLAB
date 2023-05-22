@@ -247,16 +247,17 @@ function [labelTracked,previousTracked] = tracking(currentUntracked,previousTrac
 				if point in polygon
 			%}
 			maxLabel = maxLabel + 1;
-
-			currentX = currentXY(clusterCurrentMask,1);
-			currentY = currentXY(clusterCurrentMask,2);
-			previousX = previousXY(:,1);
-			previousY = previousXY(:,2);
-
-			p = boundary(currentX,currentY);
-			in = inpolygon(previousX,previousY,currentX(p),currentY(p));
-			if numel(previousX(and(in,previousActive))) > 0
-				previousTracked(and(in,previousActive)) = maxLabel;
+			if sum(clusterCurrentMask)>2
+				currentX = currentXY(clusterCurrentMask,1);
+				currentY = currentXY(clusterCurrentMask,2);
+				previousX = previousXY(:,1);
+				previousY = previousXY(:,2);
+	
+				p = boundary(currentX,currentY);
+				in = inpolygon(previousX,previousY,currentX(p),currentY(p));
+				if numel(previousX(and(in,previousActive))) > 0
+					previousTracked(and(in,previousActive)) = maxLabel;
+				end
 			end
 			%Initialize a new Cluster Label and assign to all points in this Cluster
 			
