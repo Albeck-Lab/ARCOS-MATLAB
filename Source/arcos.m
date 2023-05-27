@@ -24,7 +24,7 @@
 %% Examples
 % See the Demos folder for a variety of examples
 
-function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,varargin)
+function [clust_by_time, clust_by_id, binaries,warnings,labels] = arcos(data,xy,ch,varargin)
 	%% Optional Parameters
 	p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
 	p.bin_perc = []; %Percentile for threshold binarization
@@ -88,7 +88,7 @@ function [clust_by_time, clust_by_id, binaries,warnings] = arcos(data,xy,ch,vara
         %%Do the arcos functions
         %[clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
 		
-		[~,warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'epsilon',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
+		[labels,warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'epsilon',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
 		optionalOuts{well} = optionalOut;
 		clust_by_time{well} = optionalOut{6};
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});

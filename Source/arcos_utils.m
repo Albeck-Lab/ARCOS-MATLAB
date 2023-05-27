@@ -580,9 +580,9 @@ classdef arcos_utils
 				eps = cdata(time).eps;
 				minpts = cdata(time).minpts;
 				dtp = cdata(time).tracked; %dtp = data at timepoint
-                if ~isempty(dtp) % EDIT FIX HI ITS NICK BREAKING STUFF
+                if ~isempty(dtp)
                     for cluster = 1:size(dtp,2)
-					    id = mode(dtp(cluster).id(:,2));
+					    id = mode(dtp(cluster).id(:,2)); % EDIT FIX HI ITS NICK BREAKING STUFF
 					    clusters(id).cid = id;
 					    clusters(id).data(time).time = time;
 					    clusters(id).data(time).XYCoord = dtp(cluster).XYCoord;
