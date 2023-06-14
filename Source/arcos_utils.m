@@ -575,7 +575,14 @@ classdef arcos_utils
 			%%Load data into struct
 			timerange = size(cdata,2);
 			max_id = cdata(end).newmax;
-			clusters = repmat(struct('cid',[],'data',struct('time',{},'XYCoord',{},'id',{},'numpts',{},'bounds',{},'inactive',{},'area',{},'compl',{},'rocarea',{},'roccount',{}),'t_start',[],'t_end',[],'dur',[], 'maxarea',[],'maxcount',[]),max_id,1); %set up struct of structs
+			clusters = repmat(struct('cid',[],...
+				'data',struct('time',{},'XYCoord',{},'id',{},'numpts',{},'bounds',{},'inactive',{},'area',{},'compl',{},'rocarea',{},'roccount',{}),...
+				't_start',[],...
+				't_end',[],...
+				'dur',[],...
+				'maxarea',[],...
+				'maxcount',[]),...
+				max_id,1); %set up struct of structs
 			for time = 1:timerange
 				eps = cdata(time).eps;
 				minpts = cdata(time).minpts;
@@ -601,7 +608,8 @@ classdef arcos_utils
 					end
 				end
 				clusters(i).data(map) = [];
-			end
+            end
+            clusters = clusters(arrayfun(@(x)~isempty(x.cid),clusters)); % check for empty cid's and remove them from the struct
 			out = clusters;
         end % end of reformat(data)
         function out = binarize_robust(raw_data,xy,ctrl,chan,type,perc)

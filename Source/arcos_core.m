@@ -160,10 +160,10 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 
 				%Rectify labelUntracked for previous if start points
 				%detected
-				delta = labelTracked(:,time-1) ~= previousTracked;
+				%delta = labelTracked(:,time-1) ~= previousTracked;
 				labelTracked(:,time-1) = previousTracked;
 
-				labelUntracked(delta,time-1) = previousTracked(delta)+max(labelUntracked(:,time-1));
+				%labelUntracked(delta,time-1) = previousTracked(delta)+max(labelUntracked(:,time-1));
 %{ 
 for plotting spreads in real time              
                 if sum(previousTracked) < 0
