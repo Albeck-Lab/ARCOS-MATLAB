@@ -59,7 +59,7 @@ function [clust_by_time, clust_by_id, binaries,warnings,labels] = arcos(data,xy,
 	end
 	if isempty(p.bin)
 		if ~isempty(p.bin_perc)
-			bin = arcos_utils.binarize(data,xy,ch,p.bin_perc); %Use simple binarization if no user-provided binarized data
+			[bin,thr] = arcos_utils.binarize(data,xy,ch,p.bin_perc); %Use simple binarization if no user-provided binarized data
 		end
 	else
 		bin = p.bin;
@@ -88,7 +88,7 @@ function [clust_by_time, clust_by_id, binaries,warnings,labels] = arcos(data,xy,
         %%Do the arcos functions
         %[clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
 		
-		[labels,warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'epsilon',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
+		[labels{well},warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'epsilon',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
 		optionalOuts{well} = optionalOut;
 		clust_by_time{well} = optionalOut{6};
 		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});

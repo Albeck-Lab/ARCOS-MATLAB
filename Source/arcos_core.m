@@ -123,7 +123,6 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 	epsilon = zeros([nTime,1]);
 	minpts = zeros([nTime,1]);
 
-    fHold = tiledlayout(1,2); % NICK FIX
 	%%Time loop
 	for time = 1:nTime
 		%%Setup: epsilon and Minpts

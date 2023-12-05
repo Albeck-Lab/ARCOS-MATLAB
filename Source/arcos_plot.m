@@ -96,6 +96,7 @@ classdef arcos_plot
             p.usebounds = true;
             p.tracked = true; %Flag to plot tracked clusters or untracked clusters
             p.outpath = pwd;
+			p.pixsize = [1,1];
             p.gif = false; %Flag to output images to gif
             p.bin_real = []; %If using synthetic data + real data, supply real data here and it'll be colored differently
             %%Prep varargin structure
@@ -129,6 +130,8 @@ classdef arcos_plot
                 rwell_data = raw_data{well}.data; %Raw data for the indexed well
                 rXCoord = rwell_data.XCoord; %XCoords for all points, indexed well
                 rYCoord = rwell_data.YCoord; %YCoords for all points, indexed well
+				rXCoord = rXCoord*p.pixsize(1);
+				rYCoord = rYCoord*p.pixsize(2);
                 binw = binarized_data{well};
                 %%Loop through time
                 for itime = 1:numel(t)
@@ -142,7 +145,7 @@ classdef arcos_plot
                     YCoord = rYCoord(:,time);
                     %image = plotter(XCoord(:,time), YCoord(:,time), cdata{rw,time},time, p.usebounds, p.bin(:,time),p.bin_real(:,time));
                     clf %Clear current figure
-                    plot(XCoord,YCoord,'o', 'MarkerEdgeColor','k', 'MarkerSize', 3, 'LineStyle', 'none' ); %plot all cells in frame
+                    plot(XCoord,YCoord,'.', 'MarkerEdgeColor','k', 'MarkerSize', 9, 'LineStyle', 'none' ); %plot all cells in frame
                     hold on;
                     axis square;
                     if p.usebin %Plot active cells
@@ -150,32 +153,33 @@ classdef arcos_plot
                         hold on;
                         if ~isempty(p.bin_real)
                             bin = logical(bin-p.bin_real);
-                            plot(XCoord(p.bin_real),YCoord(p.bin_real),'o','MarkerEdgeColor','g', 'MarkerSize', 8,'LineStyle','none'); %Real data = green
+                            plot(XCoord(p.bin_real),YCoord(p.bin_real),'o','MarkerEdgeColor','g', 'MarkerSize', 9,'LineStyle','none'); %Real data = green
                         end
-                        plot(XCoord(bin),YCoord(bin),'o','MarkerEdgeColor','r', 'MarkerSize', 3,'LineStyle','none'); %Synthetic data = red
+                        plot(XCoord(bin),YCoord(bin),'.','MarkerEdgeColor','g', 'MarkerSize', 9,'LineStyle','none'); %Synthetic data = red
                         hold on;
                     end
                     xlim([0 inf])
                     ylim([0 inf])
-                    for event = 1:size(cdata,2) %Plot collective events
-                        if cdata(event).XYCoord > 0
-                            xycoord = cdata(event).XYCoord;
-                            plot(xycoord(:,1),xycoord(:,2), 'o','MarkerEdgeColor','b','MarkerSize', 3, 'LineStyle', 'none') %clusters = blue
-                            hold on
-                        end
-                    end
-                    if p.usebounds              %Plot bounds if specified
+					if p.usebounds              %Plot bounds if specified
                         for cluster = 1:size(cwell_data,1)
                             for itime2 = 1:size(cwell_data(cluster).data,2)
                                 if cwell_data(cluster).data(itime2).time == time
                                     hold on
                                     bounds = cwell_data(cluster).data(itime2).bounds;
                                     points = cwell_data(cluster).data(itime2).XYCoord;
-                                    plot(points(bounds,1),points(bounds,2),'b');
+                                    plot(points(bounds,1),points(bounds,2),'b','LineWidth',1.75);
                                 end
                             end
                         end
+					end
+                    for event = 1:size(cdata,2) %Plot collective events
+                        if cdata(event).XYCoord > 0
+                            xycoord = cdata(event).XYCoord;
+                            plot(xycoord(:,1),xycoord(:,2), '.','MarkerEdgeColor','r','MarkerSize', 9, 'LineStyle', 'none') %clusters = blue
+                            hold on
+                        end
                     end
+
                     title(append("Well: ",int2str(well)," Time: ",int2str(time)));
 % 					if isempty(p.bin_real)
 % 						legend('inactive','active','cluster','bounds','Location','northeastoutside');
@@ -183,6 +187,7 @@ classdef arcos_plot
 % 						legend('inactive','active_real','ative_synth','cluster','bounds','Location','northeastoutside');
 % 					end
                     set(gca,'ydir','reverse') %Reverse Y axis (image origin is top left)
+					%set(gcf,'paperunits','inches','paperposition',[0 0 5 5])
                     image = gcf;
                     saveas(image,append(p.outpath,'/','XY ',int2str(well),'/',sprintf('%04d',time), '.png'))
                 end

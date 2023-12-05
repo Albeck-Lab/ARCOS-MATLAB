@@ -314,7 +314,7 @@ classdef arcos_utils
 				end
 			end
 			%%Get mean percentile of all well's channel data
-			threshold = mean(prctile(MegaDataHolder,perc));
+			threshold = mean(prctile(MegaDataHolder,perc),'omitnan');
 			%%Loop through wells again and binarize
 			for i = 1:numel(xy)
 				well = xy(i);
@@ -739,6 +739,8 @@ classdef arcos_utils
                 end %if raw_data is not empty
             end %end second iXY loop
         end % end of binarize_robust()
+        
+
         function arcosDF = Convert_Arcos_Analysis_Data(dataloc, channel, varargin)
         
         %treatments existing
@@ -780,7 +782,7 @@ classdef arcos_utils
                 dHold = load(dHold);
                 dHold = dHold.dataloc;
             end
-            dHold = makeArcosDF(dHold, channel{iData}, inp); % make the live cell dataframe
+            dHold = arcos_utils.makeArcosDF(dHold, channel{iData}, inp); % make the live cell dataframe
             arcosDF = [arcosDF; dHold]; % append the dHold dataframe to datalocDF
             clear dHold;
         end 
@@ -800,7 +802,7 @@ classdef arcos_utils
         
         if ~isempty(inp.exclude)
             for iExclude = 1:numel(inp.exclude)
-                tossThese = contains(txNames,inp.exclude{1});
+                tossThese = contains(txNames,inp.exclude{iExclude});
                 tossThese = txNames(tossThese);
                 txData = rmfield(txData,tossThese);
                 clear tossThese;
