@@ -15,6 +15,7 @@
 % * *bin_perc* - |Double|- If auto-binarizing. the percentile by which to threshold and binarize the data. *Default: []*
 % * *eps* - |cell| - User-provided epsilon values for dbscan. *Default: []*
 % * *minpts* - |cell|- User-provided minpts values for dbscan. *Default: []*
+% * *pixsize* - |array| - X and Y pixel size measurements. Used to convert pixels to micrometers
 % * *verbose* - |Logical|, |Boolean| - Toggle verbose logging. *Default: true*
 %% Outputs
 % * *clust_by_time* - |cell| - Clusters organized by timepoint
