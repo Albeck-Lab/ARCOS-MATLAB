@@ -4,5 +4,6 @@
 **/*.png
 **/*.gif
 **/*.db
+Thumbs.db
 /Data
 ARCOS-MATLAB.zip

@@ -132,9 +132,7 @@
 % indexed well/xy. 
 %% gensynth
 % Method to create artificial collective activity for process validation
-% and demonstration.
-%
-% This method uses X and Y coordinates from real data and layers synthetic activity
+% and demonstration. This method uses X and Y coordinates from real data and layers synthetic activity
 % onto those points.
 %
 % *Inputs*
@@ -276,7 +274,7 @@ classdef arcos_utils
             [~,ix]=min(abs(slopes-1)); %Get the index of max_d for ideal eps (where slope of line tangent to that point is 1);
             eps = max_d(ix);
         end 
-    function [eps,minpts] = prep_dbscan2(XCoord,YCoord,bin,varargin)
+		function [eps,minpts] = prep_dbscan2(XCoord,YCoord,bin,varargin)
 			inp.n = 11;
 			nin = length(varargin);
 			if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
@@ -763,7 +761,7 @@ classdef arcos_utils
         inp.varTypes = {'string','string','string','string','string','double','double','double',      'cell',        'string',      'string',    'double'}; % variable types for the varNames in the table
         
         
-        %% Check input varargin parameters
+        % Check input varargin parameters
         nin = length(varargin); if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end %Splits pairs to a structure
         for s = 1:2:nin; inp.(lower(varargin{s})) = varargin{s+1}; end; clear nin s varargin;
         
@@ -791,7 +789,7 @@ classdef arcos_utils
         
         function arcosDataFrame = makeArcosDF(dataloc, channel, inp)
         
-        %% Set up everything for analysis
+        % Set up everything for analysis
         
         inp.tktm = 60/dataloc.movieinfo.tsamp; %set up how many tps per hour
         if ~isempty(inp.tstartaftertx);  inp.tstartaftertx = floor(inp.tstartaftertx * inp.tktm); end 
@@ -812,7 +810,7 @@ classdef arcos_utils
         
         arcosDataFrame = table('Size',[0,numel(inp.varNames)],'VariableNames',inp.varNames,'VariableTypes', inp.varTypes); % set up the arcos dataframe
         
-        %% Set up squares for hotspot detection
+        % Set up squares for hotspot detection
         
         if inp.alreadysizenormalized % if the arcos data is already normalized to uM for coordinates 
             xTrueBox = inp.boxsize; % how many uM should a box be (in the x)? uM already
@@ -831,8 +829,8 @@ classdef arcos_utils
         
         edgesForYou = {xBoxes,yBoxes}; % put em together
         
-        
-        %% Loop through the treatments
+       
+        % Loop through the treatments
         for iTx = 1:size(txNames,1)
             tTx = txNames{iTx};
             repCounter = 0;
@@ -883,7 +881,7 @@ classdef arcos_utils
                     end
                 end
         
-                %% Collect all of the treatment info and determine which data are allowed given the times provided
+                % Collect all of the treatment info and determine which data are allowed given the times provided
                 txInfo = [txData.(tTx).tx]; %pull the one the xy is a part of and assign it
                 txInfo2 = '';
                 for iTTx = 1:length(txInfo)
@@ -903,14 +901,14 @@ classdef arcos_utils
         
                 aData = aData(sGoodRange); % keep the arcos data that falls in the given range
         
-                %% calculate SPREAD freq
+                % calculate SPREAD freq
                 a = sum(sGoodRange); % take how many spreads occur in the given time 
                 a = a / ((tEnd - tStart) / inp.tktm); % and divide it all by the allowed time span
                 a = a / (xuMsize * yuMsize);  % x um/px * numXpix * y um/px * numYpix normalize the data for the image size
                 tempDF2.freq = a * 1000000; %  * 10^6 (convert um^2 to mm^2) and append the data
                 clear a;
         
-                %% Divide the image into inp.boxsize um x inp.boxsize um regions and get the spread "rate" (spreads per hr) per square for that image
+                % Divide the image into inp.boxsize um x inp.boxsize um regions and get the spread "rate" (spreads per hr) per square for that image
                 a = {aData.data}'; % get the spread data
                 a = cellfun(@(x){nanmean(x(1).XYCoord,1)},a); 
                 a = cell2mat(a); % get the first xy of the spread
@@ -921,14 +919,14 @@ classdef arcos_utils
                 tempDF2.freq_by_region = {(countz / ((tEnd - tStart) / inp.tktm))'}; % get the fraction of counts per group (out of all squares)
                 clear a h countz totalSegs;
         
-                %% mean and distribution of spread durations
+                % mean and distribution of spread durations
                 a = [aData.dur]' / inp.tktm; % get the durs and make them into hours
                 totalSegs = [((inp.smlthresh(1) < a) & (a <= inp.smlthresh(2))), ((inp.smlthresh(2) < a) & (a <= inp.smlthresh(3))),inp.smlthresh(3) < a];
                 tempDF2.smlfractions = sum(totalSegs,1)/length(a); % what fraction of spreads are short vs medium vs long
                 tempDF2.dur = mean(a,'all','omitnan'); % get the mean duration of spreads and append the data
                 clear totalSegs a;
         
-                %% mean max spread size
+                % mean max spread size
                 a = [aData.maxarea]'; %get the spread data
                 if ~inp.alreadysizenormalized
                     a = a * (dataloc.movieinfo.PixSizeX * dataloc.movieinfo.PixSizeY);  % x um/px  * y um/px 
@@ -946,7 +944,7 @@ classdef arcos_utils
                 end % empty d{} check
             end % xy loop
         
-            %% Mean the replicates if desired
+            % Mean the replicates if desired
             if inp.meanreplicates && ~isempty(tempDF)
                 arcosDataFrame = [arcosDataFrame; tempDF(1,:)]; %transfer the info from the first xy in the list (exp, full, txinfo, rep, lmhthresh, boxsizexy, smlthresh)
                 arcosDataFrame.xy(end) = join([tempDF.xy]', ', ');
