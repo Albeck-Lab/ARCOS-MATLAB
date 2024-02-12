@@ -94,6 +94,7 @@
 % * *minpts* - |Integer| - The minpts parameter of DBSCAN.
 %% binarize
 % Method for binarizing channel data using a simple percentile threshold.
+%
 % Channel data for all xys/wells are loaded into memory and the specified
 % percentile of the data is used to threshold and binarize.
 %
