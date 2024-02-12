@@ -1,0 +1,379 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>ARCOS Plot</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2024-02-12"><meta name="DC.source" content="arcos_plot.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>ARCOS Plot</h1><!--introduction--><p>Class with methods for plotting cluster activity.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Plot</a></li><li><a href="#2">GIF</a></li><li><a href="#3">GIF SBS (Side-by-side)</a></li><li><a href="#4">Clusters</a></li></ul></div><h2 id="1">Plot</h2><p>Plots collective activity in red and displays boundaries for visualization of clustering. Plots are saved as .png files in the current working directory or in the user-specified output path using 'outpath', 'path'</p><p><b>Inputs</b></p><div><ul><li>*clust_by_time - <tt>Cell</tt> - The clust_by_time cell array output of ARCOS</li><li><b>clust_by_id</b> - <tt>Cell</tt> - The clust_by_id cell array output of ARCOS</li><li><b>binarized_data</b> - <tt>Cell</tt> - The binarized data cell array output of ARCOS</li><li><b>raw_data</b> - <tt>Cell</tt> - The raw_data cell array input of ARCOS</li><li><b>xy</b> - <tt>Array</tt> - An array of XY/well indices to plot. Can be discontinuous Ex (1:5, 7:15)</li><li><b>t</b> - <tt>Array</tt> - An array of timepoints to plot. Can be discontinuous Ex (1:5, 7:15)</li><li><i>varargin</i> - <tt>Option-value pair</tt> - Accepts additional inputs as option-value pairs. Ex 'usebin',true</li></ul></div><p><b>Optional inputs</b></p><div><ul><li><b>usebin</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Flag to use binarized data for visualizing active unclustered cells. <b>Default value: true</b></li><li><b>usebounds</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Flag to plot boundaries encompassing clusters. <b>Default value: true</b></li><li><b>tracked</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Flag to plot tracked (true) and untracked (false) clusters. <b>Default value: true</b></li><li><b>outpath</b> - <tt>String</tt>, <tt>Char</tt> - Path to desired output directory. <b>Default value: pwd (current working directory)</b></li><li><b>gif</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Flag to create animated gif from the saved plot images. <b>Default value: false</b></li><li><b>bin_real</b> - <tt>Boolean</tt>, <tt>Logical</tt> - If using synthetic data from arcos_utils layered onto real binary data (see arcos_utils.gensynth), supplying the real data here and it will be colored differently. <b>Default value: []</b></li></ul></div><h2 id="2">GIF</h2><p>Method for loading images into an animated gif.</p><p><b>Inputs</b></p><div><ul><li>*path - <tt>String</tt>, <tt>Char</tt> - Path to the directory containing the images you wish to animate. Images will be loaded in alpha-numeric order. This will also serve as the output folder for the finished gif.</li><li><b>name</b> - <tt>String</tt>, <tt>Char</tt> - Desired name for the gif file. Must contain legal characters only. Do not include the file extension in the name. Ex: 'my_gif'.</li></ul></div><h2 id="3">GIF SBS (Side-by-side)</h2><p>Method for creating gifs for side-by-side comparison. Useful for validating clustering, tracking, filtering, etc.</p><p>Images in both directories <i>must</i> be the same resolution, ex 640x480 == 640x480.  If dimensions are not equal it will break, ex 640x480 ~= 640x640.</p><p>There <i>must</i> be the same number of images in both directories.</p><p><b>Inputs</b></p><div><ul><li><b>path1</b> - <tt>String</tt>, <tt>Char</tt> - Path to first directory (will appear on the left).</li><li><b>path2</b> - <tt>String</tt>, <tt>Char</tt> - Path to the second directory (will appear on the right).</li><li><b>name</b> - <tt>String</tt>, <tt>Char</tt> - Desired name for the gif file. Must contain legal characters only. Do not include the file extension in the name. Ex: 'my_gif'.</li></ul></div><h2 id="4">Clusters</h2><p>This script plots all clusters by their cluster ID and overlays cluster data onto microscope images. It includes a few frames prior to a cluster/spread's start so the user can view the environment just prior to a spread's occurrance. These frames are loaded into an animated gif file and saved to the user's current working directory.</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% ARCOS Plot
+% Class with methods for plotting cluster activity.
+% 
+%% Plot
+% Plots collective activity in red and displays boundaries for visualization
+% of clustering. Plots are saved as .png files in the current working
+% directory or in the user-specified output path using 'outpath', 'path'
+%
+% *Inputs*
+%
+% * *clust_by_time - |Cell| - The clust_by_time cell array output of ARCOS
+% * *clust_by_id* - |Cell| - The clust_by_id cell array output of ARCOS
+% * *binarized_data* - |Cell| - The binarized data cell array output of
+% ARCOS
+% * *raw_data* - |Cell| - The raw_data cell array input of ARCOS
+% * *xy* - |Array| - An array of XY/well indices to plot. Can be
+% discontinuous Ex (1:5, 7:15)
+% * *t* - |Array| - An array of timepoints to plot. Can be discontinuous Ex
+% (1:5, 7:15)
+% * _varargin_ - |Option-value pair| - Accepts additional inputs as
+% option-value pairs. Ex 'usebin',true
+%
+% *Optional inputs*
+%
+% * *usebin* - |Boolean|, |Logical| - Flag to use binarized data for
+% visualizing active unclustered cells. *Default value: true*
+% * *usebounds* - |Boolean|, |Logical| - Flag to plot boundaries
+% encompassing clusters. *Default value: true*
+% * *tracked* - |Boolean|, |Logical| - Flag to plot tracked (true) and
+% untracked (false) clusters. *Default value: true*
+% * *outpath* - |String|, |Char| - Path to desired output directory.
+% *Default value: pwd (current working directory)*
+% * *gif* - |Boolean|, |Logical| - Flag to create animated gif from the
+% saved plot images. *Default value: false*
+% * *bin_real* - |Boolean|, |Logical| - If using synthetic data from
+% arcos_utils layered onto real binary data (see arcos_utils.gensynth), supplying
+% the real data here and it will be colored differently. *Default value:
+% []*
+%
+%% GIF
+% Method for loading images into an animated gif.
+%
+% *Inputs*
+%
+% * *path - |String|, |Char| - Path to the directory containing the images
+% you wish to animate. Images will be loaded in alpha-numeric order. This
+% will also serve as the output folder for the finished gif.
+% * *name* - |String|, |Char| - Desired name for the gif file. Must contain
+% legal characters only. Do not include the file extension in the name. Ex:
+% 'my_gif'. 
+%
+%% GIF SBS (Side-by-side)
+% Method for creating gifs for side-by-side comparison. Useful for
+% validating clustering, tracking, filtering, etc. 
+%
+% Images in both directories _must_ be the same resolution, ex 640x480 == 640x480.
+%  If dimensions are not equal it will break, ex 640x480 ~= 640x640.
+%
+% There _must_ be the same number of images in both directories. 
+% 
+% *Inputs*
+%
+% * *path1* - |String|, |Char| - Path to first directory (will appear on
+% the left).
+% * *path2* - |String|, |Char| - Path to the second directory (will appear
+% on the right). 
+% * *name* - |String|, |Char| - Desired name for the gif file. Must contain
+% legal characters only. Do not include the file extension in the name. Ex:
+% 'my_gif'.
+%
+%% Clusters
+% This script plots all clusters by their cluster ID and overlays cluster
+% data onto microscope images. 
+% It includes a few frames prior to a cluster/spread's start so the user
+% can view the environment just prior to a spread's occurrance.
+% These frames are loaded into an animated gif file and saved to the user's
+% current working directory. 
+%
+%The name of this script it misleading as it does *nothing* to identify
+%apoptosis by itself. Rather, it provides the user with the data they need
+%to identify apoptosis events.
+%
+% *Inputs*
+%
+% * *clust_by_id* - |Struct| - ARCOS output containing clusters organized
+% by cluster ID. *Must be run through ARCOS Analysis "Analyze" first
+% * *xy* - |Array| - Array of well indices (integers) to process. Can handle
+% discontinuous indices. Ex: (1:5, 11:15)
+% * *ch* - |Integer| - nd2 channel to view
+% * *nd2path* - |String|, |Char| - Path to the nd2 file for the data.
+classdef arcos_plot
+    methods(Static)
+        function plot(clust_by_time,clust_by_id,binarized_data,raw_data,xy,t,varargin)
+            %%Optional parameters
+            p.usebin = true; %Flag to use binarized data for visualizing active cells
+            p.usebounds = true;
+            p.tracked = true; %Flag to plot tracked clusters or untracked clusters
+            p.outpath = pwd;
+			p.pixsize = [1,1];
+            p.gif = false; %Flag to output images to gif
+            p.bin_real = []; %If using synthetic data + real data, supply real data here and it'll be colored differently
+            %%Prep varargin structure
+            nin = length(varargin);     %Check for even number of add'l inputs
+            if rem(nin,2) ~= 0
+                warning('Additional inputs must be provided as option, value pairs');  
+            end%Splits pairs to a structure
+            for s = 1:2:nin
+                p.(lower(varargin{s})) = varargin{s+1};   
+            end
+            if p.usebounds == true
+                %{
+                if isempty(clust_by_id{xy(1)}(1).data(1).bounds) %This will bug out if there's no data in clust_by_id{1}
+                    error('No bounds detected in data. Have you run analysis yet?')
+                end
+                %}
+            end
+            %%Set up environment
+            mkdir(p.outpath); %Make outpath if it doesn't exist
+            fh = figure(); %Figure handle
+            set(fh,'WindowStyle','Normal') %Set figure window behavior
+            set(fh,'Resize','off') %Lock figure dimensions
+            warning("Do not close the figure until the process has finished");
+			warning('off','MATLAB:legend:IgnoringExtraEntries');
+            %%Loop through XY
+            for iwell = 1:numel(xy)
+				well = xy(iwell);
+                mkdir(append(p.outpath,'\XY ',int2str(well))); %Make output directory
+                pwell_data = clust_by_time{well}; %Processed data for the indexed well
+                cwell_data = clust_by_id{well}; %Cluster-wise data for the indexed well
+                rwell_data = raw_data{well}.data; %Raw data for the indexed well
+                rXCoord = rwell_data.XCoord; %XCoords for all points, indexed well
+                rYCoord = rwell_data.YCoord; %YCoords for all points, indexed well
+				rXCoord = rXCoord*p.pixsize(1);
+				rYCoord = rYCoord*p.pixsize(2);
+                binw = binarized_data{well};
+                %%Loop through time
+                for itime = 1:numel(t)
+					time = t(itime);
+					if p.tracked == true
+						cdata = pwell_data(time).tracked;
+					else
+						cdata = pwell_data(time).untracked;
+					end
+                    XCoord = rXCoord(:,time);
+                    YCoord = rYCoord(:,time);
+                    %image = plotter(XCoord(:,time), YCoord(:,time), cdata{rw,time},time, p.usebounds, p.bin(:,time),p.bin_real(:,time));
+                    clf %Clear current figure
+                    plot(XCoord,YCoord,'.', 'MarkerEdgeColor','k', 'MarkerSize', 9, 'LineStyle', 'none' ); %plot all cells in frame
+                    hold on;
+                    axis square;
+                    if p.usebin %Plot active cells
+                        bin = binw(:,time);
+                        hold on;
+                        if ~isempty(p.bin_real)
+                            bin = logical(bin-p.bin_real);
+                            plot(XCoord(p.bin_real),YCoord(p.bin_real),'o','MarkerEdgeColor','g', 'MarkerSize', 9,'LineStyle','none'); %Real data = green
+                        end
+                        plot(XCoord(bin),YCoord(bin),'.','MarkerEdgeColor','g', 'MarkerSize', 9,'LineStyle','none'); %Synthetic data = red
+                        hold on;
+                    end
+                    xlim([0 inf])
+                    ylim([0 inf])
+					if p.usebounds              %Plot bounds if specified
+                        for cluster = 1:size(cwell_data,1)
+                            for itime2 = 1:size(cwell_data(cluster).data,2)
+                                if cwell_data(cluster).data(itime2).time == time
+                                    hold on
+                                    bounds = cwell_data(cluster).data(itime2).bounds;
+                                    points = cwell_data(cluster).data(itime2).XYCoord;
+                                    plot(points(bounds,1),points(bounds,2),'b','LineWidth',1.75);
+                                end
+                            end
+                        end
+					end
+                    for event = 1:size(cdata,2) %Plot collective events
+                        if cdata(event).XYCoord > 0
+                            xycoord = cdata(event).XYCoord;
+                            plot(xycoord(:,1),xycoord(:,2), '.','MarkerEdgeColor','r','MarkerSize', 9, 'LineStyle', 'none') %clusters = blue
+                            hold on
+                        end
+                    end
+
+                    title(append("Well: ",int2str(well)," Time: ",int2str(time)));
+% 					if isempty(p.bin_real)
+% 						legend('inactive','active','cluster','bounds','Location','northeastoutside');
+% 					else
+% 						legend('inactive','active_real','ative_synth','cluster','bounds','Location','northeastoutside');
+% 					end
+                    set(gca,'ydir','reverse') %Reverse Y axis (image origin is top left)
+					%set(gcf,'paperunits','inches','paperposition',[0 0 5 5])
+                    image = gcf;
+                    saveas(image,append(p.outpath,'/','XY ',int2str(well),'/',sprintf('%04d',time), '.png'))
+                end
+                close gcf
+                %%Prepare GIF if specified
+                if p.gif == true
+                    arcos_plot.gif(p.outpath,'GIF');
+                end
+            end
+        end 
+        function gif(path,name)
+			disp('An empty figure will appear. Do not close it until processing completes')
+            files = dir(append(path,'/*.png')); %Get list of filenames
+            filename = append(path,'/',name,'.gif'); % Specify the output file name
+			for f = 1:length(files) %Loop through files list
+                im = imread(append(files(f).folder,'/',files(f).name)); %Read image into memory
+                [A,map] = rgb2ind(im,256); %Convert from rgb
+                if f == 1
+                    imwrite(A,map,filename,'gif','LoopCount',Inf); %Initialize gif
+                else
+                    imwrite(A,map,filename,'gif','WriteMode','append'); %Append gif
+                end
+                hold off
+			end
+			disp('Processing complete')
+			close(gcf)
+        end 
+        function gif_sbs(path1,path2,name)
+            warning('Assuming equal numbers of files in both directories');
+            files1 = dir(append(path1,'/*.png'));
+            files2 = dir(append(path2,'/*.png'));
+            filename = append(path1,'/',name,'.gif'); % Specify the output file name
+            for f = 1:length(files1)
+                im1 = imread(append(files1(f).folder,'/',files1(f).name));
+                im2 = imread(append(files2(f).folder,'/',files2(f).name));
+                im = cat(2,im1,im2);
+                [A,map] = rgb2ind(im,256);
+                if f == 1
+                    imwrite(A,map,filename,'gif','LoopCount',Inf);
+                    bar = waitbar(f/length(files1),append('Assembling GIF ',int2str(f),' of ', int2str(length(files1))));
+                else
+                    imwrite(A,map,filename,'gif','WriteMode','append');
+                    waitbar(f/length(files1),bar,append('Assembling GIF ',int2str(f),' of ', int2str(length(files1))));
+                end
+                hold off
+            end
+            close(bar);
+            close gcf
+            disp(append('GIF Assembly complete. File saved in ',path1))
+		end
+		function clusters(clust_by_id,xy,ch,nd2path)
+			handle=3; % The number of frames before and after a spread's start
+			dao = ImageAccess(nd2path); %Data access object for the nd2 file
+			if ~isfield(clust_by_id{xy(1)}, 't_start'); error("Insufficient data. Analysis must be run first."); end
+			for ixy = 1:numel(xy)
+				well = xy(ixy);
+				spreads = clust_by_id{well};
+				for spr = 1:size(spreads,1)
+					spread = spreads(spr);
+					if spread.t_start-handle>0
+						first_frame = spread.t_start-handle;
+					else
+						first_frame = spread.t_start;
+					end
+					if spread.t_start+handle>dao.imax.t
+						last_frame = dao.imax.t;
+					else
+						last_frame = spread.t_start+handle;
+					end
+					frames = first_frame:last_frame;
+					for iframe = frames(1):frames(end)
+						clf
+						CurrFrame = dao.GetFrame([iframe,ch,well,1]);
+						CurrFrame = uint16(CurrFrame);
+            			adjust = stretchlim(CurrFrame);
+            			CurrFrame = imadjust(CurrFrame,adjust,[]);
+            			CurrFrame = double(CurrFrame);
+            			CurrFrame = uint8(round(CurrFrame/256));
+            			CurrFrame = repmat(CurrFrame, [1, 1, 3]);
+            			imshow(CurrFrame);
+						hold on
+						plot(1,1)
+						title(append('XY ',string(well),' Spread ',string(spr),' Time: ',string(iframe)))
+						spreadData = [];
+						for n = 1:size(spread.data,2)
+							if iframe == spread.data(n).time
+								spreadData = spread.data(n);
+								break
+							end
+						end
+						if ~isempty(spreadData)
+							bounds = spreadData.bounds;
+							points = spreadData.XYCoord;
+							hold on
+							plot(points(bounds,1),points(bounds,2),'g','LineWidth',1.5)
+						end
+						im = getframe(gcf);
+						
+						[A,map] = rgb2ind(im.cdata,256); %Convert from rgb
+						filename = append('XY ',string(well),' Spread ',string(spr),'.gif');
+						if iframe == frames(1)
+                    		imwrite(A,map,filename,'gif','LoopCount',Inf); %Initialize gif
+                		else
+                    		imwrite(A,map,filename,'gif','WriteMode','append'); %Append gif
+						end
+						hold off
+					end
+				end %End spread loop
+			end %End XY loop
+		end
+    end 
+end
+
+
+%tiledlayout - make figure, tell it dimensions of output or put in "flow"
+%to dynamically change. Have to say "nexttile" even for first tile
+##### SOURCE END #####
+--></body></html>

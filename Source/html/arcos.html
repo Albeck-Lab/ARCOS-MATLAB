@@ -1,0 +1,301 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>ARCOS</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2024-02-12"><meta name="DC.source" content="arcos.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>ARCOS</h1><!--introduction--><p>ARCOS, or Automated Recognition of Collective Signaling is a MATLAB-based adaptation and expansion of Maciej Dobrzynski's <a href="https://github.com/dmattek/ARCOS">R Package</a> of the same name.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Inputs</a></li><li><a href="#2">Optional Inputs</a></li><li><a href="#3">Outputs</a></li><li><a href="#4">Examples</a></li></ul></div><h2 id="1">Inputs</h2><div><ul><li><b>data</b> - <tt>cell</tt> - The data to be processed. Each cell is a well/xy.</li><li><b>xy</b> - <tt>array</tt> - Array of well indices (integers) to process. Can handle discontinuous indices. Ex: (1:5, 11:15)</li><li><b>ch</b> - <tt>char</tt> - The identifier of the channel to process. Ex: 'nEKAR'. Must be a 'character', not a "string".</li><li><i>varargin</i> - <tt>option value pairs</tt> - accepts optional inputs as option-value pairs.</li></ul></div><h2 id="2">Optional Inputs</h2><div><ul><li><b>bin</b> - <tt>cell</tt> - User-provided binarized data. Each cell is well/xy binary data as logical arrays. Rows are cells (observations) and columns are timepoints. <b>Default: []</b></li><li><b>bin_perc</b> - <tt>Double</tt>- If auto-binarizing. the percentile by which to threshold and binarize the data. <b>Default: []</b></li><li><b>eps</b> - <tt>cell</tt> - User-provided epsilon values for dbscan. <b>Default: []</b></li><li><b>minpts</b> - <tt>cell</tt>- User-provided minpts values for dbscan. <b>Default: []</b></li><li><b>pixsize</b> - <tt>array</tt> - X and Y pixel size measurements. Used to convert pixels to micrometers</li><li><b>verbose</b> - <tt>Logical</tt>, <tt>Boolean</tt> - Toggle verbose logging. <b>Default: true</b></li></ul></div><h2 id="3">Outputs</h2><div><ul><li><b>clust_by_time</b> - <tt>cell</tt> - Clusters organized by timepoint</li><li><b>clust_by_id</b> - <tt>cell</tt> - Clusters organized by cluster ID</li><li><b>binaries</b> - <tt>cell</tt> - Binarization data used to cluster</li><li><b>warnings</b> - <tt>cell</tt> - Warnings that can indicate poor clustering</li></ul></div><h2 id="4">Examples</h2><p>See the Demos folder for a variety of examples</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% ARCOS
+% ARCOS, or Automated Recognition of Collective Signaling is a MATLAB-based
+% adaptation and expansion of Maciej Dobrzynski's <https://github.com/dmattek/ARCOS R Package> of the same name.
+% 
+% 
+%% Inputs
+% * *data* - |cell| - The data to be processed. Each cell is a well/xy.
+% * *xy* - |array| - Array of well indices (integers) to process. Can handle
+% discontinuous indices. Ex: (1:5, 11:15)
+% * *ch* - |char| - The identifier of the channel to process. Ex: 'nEKAR'.
+% Must be a 'character', not a "string". 
+% * _varargin_ - |option value pairs| - accepts optional inputs as option-value pairs.
+%%% Optional Inputs
+% * *bin* - |cell| - User-provided binarized data. Each cell is well/xy binary data as logical arrays. Rows are cells (observations) and columns are timepoints. *Default: []*
+% * *bin_perc* - |Double|- If auto-binarizing. the percentile by which to threshold and binarize the data. *Default: []*
+% * *eps* - |cell| - User-provided epsilon values for dbscan. *Default: []*
+% * *minpts* - |cell|- User-provided minpts values for dbscan. *Default: []*
+% * *pixsize* - |array| - X and Y pixel size measurements. Used to convert pixels to micrometers
+% * *verbose* - |Logical|, |Boolean| - Toggle verbose logging. *Default: true*
+%% Outputs
+% * *clust_by_time* - |cell| - Clusters organized by timepoint
+% * *clust_by_id* - |cell| - Clusters organized by cluster ID
+% * *binaries* - |cell| - Binarization data used to cluster
+% * *warnings* - |cell| - Warnings that can indicate poor clustering
+%% Examples
+% See the Demos folder for a variety of examples
+
+function [clust_by_time, clust_by_id, binaries,warnings,labels] = arcos(data,xy,ch,varargin)
+	%% Optional Parameters
+	p.bin = []; %user-provided binarized data %%check if it's the same size as the X and Y coord data
+	p.bin_perc = []; %Percentile for threshold binarization
+	p.eps = {[]};
+	p.minpts = {[]};
+	p.pixsize = [1 1];
+	p.verbose = true;
+	p.debug = false;
+	%% Prep varargin struct
+	nin = length(varargin);
+	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs');  end
+	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1};   end
+	%% DBSAN Prep
+    if isnumeric(p.eps); p.eps = {p.eps}; end %assert eps is cell
+    if isnumeric(p.minpts); p.minpts = {p.minpts}; end %assert eps is cell
+	%% XY Prep
+	if isempty(xy); xy = (1:size(data,2)); end
+	%% Preallocate out
+	clust_by_time = cell(1,numel(xy));
+	clust_by_id = cell(1,numel(xy));
+	binaries = cell(1,numel(xy));
+	optionalOuts = cell(1,numel(xy));
+	warnings = struct('frame_warnings',{},'excess_nans',{});
+	%% Check XYs
+	goodxys = ~arrayfun(@(x)isempty(data{x}),xy);% check to see if the input xys are good
+	xy = xy(goodxys);
+	%% Channel prep
+	if ischar(ch); ch = {ch}; end % assert ch is cell
+	if isempty(p.bin_perc) && isempty(p.bin)
+		warning("Optional parameter 'bin_perc' not set. Binarizing data using 80th percentile threshold")
+		p.bin_perc = 80;
+	end
+	if isempty(p.bin)
+		if ~isempty(p.bin_perc)
+			[bin,thr] = arcos_utils.binarize(data,xy,ch,p.bin_perc); %Use simple binarization if no user-provided binarized data
+		end
+	else
+		bin = p.bin;
+	end
+	%% Loop through XY
+	numXYs = numel(xy);
+    for iwell = 1:numXYs
+		well = xy(iwell);
+		if p.debug == true;disp(append('Processing well ',string(well))); end
+		%% Define XCoord and YCoord
+		XCoord = data{well}.data.XCoord;
+		YCoord = data{well}.data.YCoord;
+		assert(~isempty(XCoord), 'No x coordinate data detected');
+		assert(~isempty(YCoord), 'No y coordinate data detected');
+		%% Warn if too many NaNs
+		sum_nans = sum(isnan(XCoord),'all');
+		sz = numel(XCoord);
+		nans_thr = 70; %If this percentage of the data is NaNs it'll get logged in warnings
+		if sum_nans/sz*100 > nans_thr
+			warnings(well).excess_nans = sum_nans/sz*100;
+			if p.verbose == true; warning(append("Excessive NaNs detected in well ", string(well))); end
+		end
+		%% Format and assign eps and minpts (if given)
+		if numel(p.eps) == 1; eps = p.eps{1}; else; eps = p.eps{well}; end 
+		if numel(p.minpts) == 1; minpts = p.minpts{1}; else; minpts = p.minpts{well}; end
+        %%Do the arcos functions
+        %[clust_by_time{well},warnings(well).frame_warnings] = arcos_core(XCoord,YCoord,bin{well},'eps',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
+		
+		[labels{well},warnings{well}.frame_warnings,optionalOut] = arcos_core(XCoord,YCoord,bin{well},'epsilon',eps,'minpts',minpts, 'verbose', p.verbose, 'debug', p.debug, 'well', well,'pixsize', p.pixsize);
+		optionalOuts{well} = optionalOut;
+		clust_by_time{well} = optionalOut{6};
+		clust_by_id{well} = arcos_utils.reformat(clust_by_time{well});
+		
+		binaries = bin;
+    end %well loop
+end %wrapper function end
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%Take completed dataset and pass over it looking for merges/splits
+%Segregate clusters (or don't)
+
+%Set up structure in arcos procedure to do a second pass loop - performs
+%actions on output data (cdata). 
+%Loop through data cluster-by-cluster rather than time-by-time.
+
+
+
+
+
+% MP REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+%Here's the outline and notes that I've got for now.  It's not
+%   perfect - let me know if there are things that don't make sense
+%   or where you don't see how to implement it.
+%   
+%   (Maybe just pass in the two "cdata" time slices to compare,
+%       since we don't use the rest of cdata in here.)      
+%   
+%   Get all Past Nearest Neighbors for Current Points
+%   Get Past Cluster IDs for Neighbors within Epsilon
+%       e.g. posCurr(:,4) = 0;  (or initialize posCurr with zeros)
+%            isClose = d <= epsilon;  %Logical index
+%            posCurr( isClose ) = posPrev( idx(isClose) ); %Assign
+%
+        %   FOR each Current Cluster
+        %       (Maybe use a separate index for temporary cluster data to write, nextID)
+        %       IF maps to more than one Past Cluster
+        %           Assign each Current point to its Neighbor's Cluster ID
+        %           Store as separate clusters with newly assigned Past IDs
+        %               e.g. clust{nextID, 1} = XYs(posCurr(:,4)==PastID); 
+        %                    clust{nextID, 2} = PastID; ... 
+        %                    nextID = nextID + 1; ...
+        %       IF maps to exactly one Past Cluster
+        %           Store all points in Current Cluster as Past ID
+        %               e.g. clust{nextID, 2} = PastID; ...
+        %       IF maps to no Past Clusters
+        %           Assign a new cluster ID, and maybe flag as a Start
+        %              e.g.  maxID = maxID + 1; %(tdata grows)
+        %                    clust{nextID, 2} = maxID; 
+        %                    clust{nextID, 5} = 0; ...
+        %                    nextID = nextID + 1; ...
+        %       (Could sort by ID column after assignment, if helpful)
+        %
+        %   FOR each Past Cluster (to find Splits)
+        %       Find Current Clusters mapped to this Past Cluster
+        %       IF more than one, keep the one closest (average distance?),
+        %           and make new IDs for the other(s), flagging lineage
+        %           with ID from the parent Past Cluster
+        %               e.g. tdata{newID, 2} = newID;  %(tdata may not need the self-ID column, if it's in ID order) 
+        %                    tdata{newID, 5} = pastID; ...
+        %       IF exactly one, copy temporary clust data to tdata
+        %           e.g. tdata{pastID, :} = clust{matchingID, :};
+        %           (Maybe initialize tdata column ~5 to NaN by default)
+        %       IF none, flag past Cluster as an End (this might be useful)
+        %           e.g. tdata{pastID, 5} = -1;
+        %   
+        % REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+%Add column to final output that has lineage tracking - flag if it's a new
+%cluster started from nothing- split from something else or neither of
+%those- was linked
+% If new or split - 
+%Once tracking loop is done, do a verification / lineage loop to track
+%inheritance / etc
+%
+% Part 1 - 151 - copy in structure of "if more than 1 previous cluster connected,
+% assign each point to whatever closest prev clust is. If only 1 prev clust
+% connected, assign all points to prev clust.
+%if no prev clust connected, keep them all as zeros
+%Keep current frame cluster assignment and previous cluster assignment
+
+% Part 2 - lineage tracking
+
+
+##### SOURCE END #####
+--></body></html>

@@ -1,0 +1,448 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>ARCOS Core</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2024-02-12"><meta name="DC.source" content="arcos_core.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>ARCOS Core</h1><!--introduction--><p>The core clustering functions of ARCOS</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">ARCOS_Core</a></li><li><a href="#2">Clustering</a></li><li><a href="#3">Tracking</a></li><li><a href="#4">Unpack</a></li><li><a href="#5">Examples</a></li><li><a href="#6">See also</a></li></ul></div><h2 id="1">ARCOS_Core</h2><p><b>Inputs</b></p><div><ul><li><b>XCoord</b> - <tt>Double array</tt> - X coordinates of tracked cells</li><li><b>YCoord</b> - <tt>Double array</tt> - Y coordinates of tracked cells</li><li><b>bin</b> - <tt>Logical array</tt> - binary data</li><li><b><i>varargin</i></b> - <tt>Option-value pairs</tt> - Accepts optional inputs as option-value pairs. Ex: 'epsilon', 60</li></ul></div><p><b>Optional Inputs</b></p><div><ul><li><b>epsilon</b> - <tt>Double</tt> - Optional epsilon value for DBSCAN. Automatically calculated if left empty.</li><li><b>minpts</b> - <tt>Integer</tt> - Optional minpts value for DBSCAN. Automatically calculated if left empty.</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>cdata</b> - <tt>struct</tt> - Cluster data organized by time</li><li><b>warnings</b> - <tt>Table</tt> - Warnings indicating where poor clustering may have occurred</li></ul></div><h2 id="2">Clustering</h2><p>Clustering of active cells via DBSCAN</p><p><b>Inputs</b></p><div><ul><li><b>activeXY</b> - <tt>Double array</tt> - X and Y coordinates for active cells</li><li><b>epsilon</b> - <tt>Double</tt> - epsilon value for DBSCAN</li><li><b>minpts</b> - <tt>Integer</tt> - Minpts value for DBSCAN</li><li><i>varargin</i> - <tt>Option-value pair</tt> - Accepts addition inputs as option-value pairs. Ex 'debug', true.</li></ul></div><div><ul><li>Optional Inputs*</li></ul></div><div><ul><li><b>debug</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Debug logging toggle. <b>Default value: false</b></li><li><b>verbose</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Verbose logging toggle. <b>Default value: true</b></li></ul></div><p><b>Ouputs</b></p><div><ul><li><b>out</b> - <tt>Struct</tt> - struct containing XY coordinates of clustered cells and their cluster IDs</li></ul></div><h2 id="3">Tracking</h2><p>Tracking method that reassigns cluster IDs based on knnsearch</p><p><b>Inputs</b></p><div><ul><li><b>sCurr</b> - <tt>Struct</tt> - Struct containing the currently indexed untracked cluster data</li><li><b>sPrev</b> - <tt>Struct</tt> - Struct containing the previously indexed tracked cluster data</li><li><b>bPrev</b> - <tt>Struct</tt> - Struct containing the previously indexed untracked cluster data</li><li><b>epsilon</b> - <tt>Double</tt> - epsilon value used to cluster the currently indexed data. Used in knnsearch algorithm</li><li><b>maxLabel</b> - <tt>Integer</tt> - Max cluster ID assigned in the <i>previous</i> tracking iteration</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>tracks</b> - <tt>Struct</tt> - Structure containing XY coordinates, cluster ID lineage and a flag indicating whether a cluster reassignment is unique</li><li><b>maxLabel</b> - <tt>Integer</tt> - Max cluster ID assigned in the <i>current</i> tracking iteration</li></ul></div><h2 id="4">Unpack</h2><p>Helper function to unpack structs into arrays.</p><p><b>Inputs</b></p><div><ul><li><b>d</b> - <tt>Struct</tt> - Struct to be unpacked into an array</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>xy</b> - <tt>Array</tt> - Array of X and Y coordinates unpacked from the inputted struct</li></ul></div><h2 id="5">Examples</h2><p>See "core_only.mlx" in the Demos folder to use ARCOS Core by itself</p><p>Otherwise, see default_params.mlx in the Demos folder.</p><h2 id="6">See also</h2><p>dbscan, knnsearch</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% ARCOS Core
+% The core clustering functions of ARCOS
+% 
+%% ARCOS_Core
+%
+% *Inputs*
+%
+% * *XCoord* - |Double array| - X coordinates of tracked cells
+% * *YCoord* - |Double array| - Y coordinates of tracked cells
+% * *bin* - |Logical array| - binary data
+% * *_varargin_* - |Option-value pairs| - Accepts optional inputs as
+% option-value pairs. Ex: 'epsilon', 60
+%
+% *Optional Inputs*
+%
+% * *epsilon* - |Double| - Optional epsilon value for DBSCAN. Automatically
+% calculated if left empty.
+% * *minpts* - |Integer| - Optional minpts value for DBSCAN. Automatically
+% calculated if left empty.
+%
+% *Outputs*
+%
+% * *cdata* - |struct| - Cluster data organized by time
+% * *warnings* - |Table| - Warnings indicating where poor clustering may
+% have occurred
+%
+%% Clustering
+% Clustering of active cells via DBSCAN
+%
+% *Inputs*
+%
+% * *activeXY* - |Double array| - X and Y coordinates for active cells
+% * *epsilon* - |Double| - epsilon value for DBSCAN
+% * *minpts* - |Integer| - Minpts value for DBSCAN
+% * _varargin_ - |Option-value pair| - Accepts addition inputs as
+% option-value pairs. Ex 'debug', true. 
+%
+% * Optional Inputs*
+%
+% * *debug* - |Boolean|, |Logical| - Debug logging toggle. *Default value:
+% false*
+% * *verbose* - |Boolean|, |Logical| - Verbose logging toggle. *Default
+% value: true*
+%
+% *Ouputs*
+%
+% * *out* - |Struct| - struct containing XY coordinates of clustered cells
+% and their cluster IDs
+%
+%
+%% Tracking
+% Tracking method that reassigns cluster IDs based on knnsearch
+%
+% *Inputs*
+%
+% * *sCurr* - |Struct| - Struct containing the currently indexed untracked
+% cluster data
+% * *sPrev* - |Struct| - Struct containing the previously indexed tracked
+% cluster data
+% * *bPrev* - |Struct| - Struct containing the previously indexed untracked
+% cluster data
+% * *epsilon* - |Double| - epsilon value used to cluster the currently indexed
+% data. Used in knnsearch algorithm
+% * *maxLabel* - |Integer| - Max cluster ID assigned in the _previous_ tracking
+% iteration
+%
+% *Outputs*
+%
+% * *tracks* - |Struct| - Structure containing XY coordinates, cluster ID
+% lineage and a flag indicating whether a cluster reassignment is unique
+% * *maxLabel* - |Integer| - Max cluster ID assigned in the _current_ tracking
+% iteration
+%
+%% Unpack
+% Helper function to unpack structs into arrays.
+%
+% *Inputs*
+%
+% * *d* - |Struct| - Struct to be unpacked into an array
+%
+% *Outputs*
+%
+% * *xy* - |Array| - Array of X and Y coordinates unpacked from the
+% inputted struct
+%
+%% Examples
+% See "core_only.mlx" in the Demos folder to use ARCOS Core by itself
+%
+% Otherwise, see default_params.mlx in the Demos folder.
+%% See also
+% dbscan, knnsearch
+function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,varargin)
+
+	%Set default parameters
+	p.epsilon = [];
+	p.minpts = [];
+	p.verbose = true;
+	p.debug = false;
+	p.well = [];
+	p.pixsize = [1 1];
+
+	%Parse inputs
+	nin = length(varargin);
+	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs'); end  %#ok<WNTAG>
+	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1}; end
+
+	[nCells, nTime] = size(XCoord);
+
+	runPrep = [isempty(p.epsilon), isempty(p.minpts)];
+    %%Preallocate cdata, initialize maxLabel, preallocate warnings
+
+    maxLabel = 0;
+	maxLabels = zeros(nTime,1);
+	warnings = struct('too_sparse',{});
+
+	%Scale coordinates to calibrated dimensions
+    XCoord = XCoord.*p.pixsize(1);
+    YCoord = YCoord.*p.pixsize(2);
+	
+	allActive = cell(1,nTime);
+	labelUntracked = zeros(size(XCoord));
+	labelTracked = zeros(size(XCoord));
+	epsilon = zeros([nTime,1]);
+	minpts = zeros([nTime,1]);
+
+	%%Time loop
+	for time = 1:nTime
+		%%Setup: epsilon and Minpts
+		if any(runPrep); [epsilon(time),minpts(time)] = arcos_utils.prep_dbscan2(XCoord(:,time),YCoord(:,time),bin(:,time)); end
+		if ~runPrep(1);  epsilon(time) = p.epsilon;  end  %Override with user-provided epsilon
+		if ~runPrep(2);  minpts(time) = p.minpts; end  %Override with user-provided minpts
+
+
+		%%Log warning if epsilon is abnormal
+		if epsilon(time) >150
+			warnings(time).too_sparse = "High epsilon. Check data for low cell density";
+		end % Warning if epsilon is abnormally high
+		
+		
+		%%Setup and run Clustering
+		
+		active = bin(:,time);
+        activeXY = [XCoord(active,time), YCoord(active,time)];
+		allActive{time} = active;
+        labelUntracked(active,time) = clustering(activeXY, epsilon(time), minpts(time));
+		
+
+        %%Track if possible
+		%Tracking is retroactive from the current frame. 
+		% If the current frame is the first frame, untracked becomes tracked.
+		if time>1
+            [labelTracked(:,time),previousTracked] = tracking(...
+				labelUntracked(:,time),...
+				labelTracked(:,time-1),...
+				[XCoord(:,time),YCoord(:,time)],...
+				[XCoord(:,time-1),YCoord(:,time-1)],...
+				allActive{time-1},...
+				epsilon(time),maxLabel);
+
+				%Rectify labelUntracked for previous if start points
+				%detected
+				%delta = labelTracked(:,time-1) ~= previousTracked;
+				labelTracked(:,time-1) = previousTracked;
+
+				%labelUntracked(delta,time-1) = previousTracked(delta)+max(labelUntracked(:,time-1));
+%{ 
+for plotting spreads in real time              
+                if sum(previousTracked) < 0
+                    clrz = hsv(numel(unique(previousTracked))-1);
+                    clrz = clrz(randperm(size(clrz,1)),:);
+                    clrz = [0.95,0.95,0.95; clrz];
+                    nexttile(1);
+                    gscatter(labelTracked(:,time-1),previousXY(:,2),previousTracked,clrz,".",15);
+                    nexttile(2);
+                    gscatter(previousXY(:,1),previousXY(:,2),previousTracked,clrz,".",15);
+                    pause(0.1)
+                end
+%}
+		else
+            labelTracked(active,time) = labelUntracked(active,time);
+		end
+		%Update record of maximum cluster ID across this frame
+		maxLabel = max(labelTracked(:));
+		maxLabels(time) = maxLabel;
+	end
+
+
+	num_high_epsilon = numel([warnings(:).too_sparse]);
+	if num_high_epsilon > 0 && p.verbose
+	    warning(append("Well: ", string(p.well), " - ", string(num_high_epsilon), ' timepoints had higher than expected epsilon values and may not cluster well'))
+	    disp("See the 'warnings' output for more information")
+	end
+	optionalOut = {};
+	optionalOut{1} = allActive; %Per-timepoint vectors 
+	optionalOut{2} = labelUntracked;
+	optionalOut{3} = epsilon;
+	optionalOut{4} = minpts;
+	optionalOut{5} = maxLabels;
+	
+	optionalOut{6} = formatLegacy(labelTracked,labelUntracked,XCoord,YCoord,epsilon,minpts,maxLabels); % This is clust_by_time
+end
+
+
+function label = clustering(activeXY, epsilon, minpts)
+	%Short-circuit on empty input
+	if isempty(activeXY)
+		label = [];
+		return; 
+	end
+	%Perform main dbscan clustering
+    label = dbscan(activeXY, epsilon, minpts);
+	label(label==-1) = 0; %Change outlier cluster IDs to 0 (unclustered)
+end
+
+
+
+function [labelTracked,previousTracked] = tracking(currentUntracked,previousTracked,currentXY,previousXY,previousActive,epsilon,maxLabel)
+	labelTracked = zeros(size(currentUntracked)); %FIXME - Maybe not initialize, because Untracke labels are not 
+	%	constrained with respect to previous tracked labels.  Could randomly equal previous labels?
+	
+	%Get indices and distances of current points' neighbors in previous frame
+    [idxPreviousNeighbors,dPreviousNeighbors] = knnsearch(previousXY,currentXY); 
+    isClose = dPreviousNeighbors <= epsilon; 	%Flag if neighbors are within epsilon
+	%	Assign current point the cluster label of nearest previous point, IF within epsilon
+	isClose(currentUntracked==0) = 0; 
+	% FIXME the idx output of knnsearch is the index of the XY coordinates
+	% and cannot be used to index into label matrices
+
+	idxPreviousClose = idxPreviousNeighbors(isClose);
+	labelTracked(isClose) = previousTracked(idxPreviousClose);
+
+	currentLabelUnique = unique(currentUntracked(currentUntracked > 0))';  %Get list of current cluster labels
+    for i = currentLabelUnique  	%Operating cluster-by-cluster
+        clusterCurrentMask = currentUntracked==i;  %Mask of points in this Cluster
+
+		%Get (unique) list of new Labels mapped to this Cluster
+		newLabelList = unique(labelTracked(clusterCurrentMask));
+		newLabelList = newLabelList(newLabelList > 0);
+
+		nNew = length(newLabelList);  %Number of Labels mapped to this Cluster
+
+		%Adjust Label assignments to be consistent across current Clusters
+        if nNew == 0  		%IF mapped to no past Clusters
+            %{
+				Search again for outlier points (individual active cells) that are 
+				within some radius of the current cluster, and if found, add this/these 
+				point(s) to the previous frame's cluster list, labeled with the 
+				current cluster's newly generated label.
+
+				do inpolygon search
+				if point in polygon
+            %}
+
+            maxLabel = maxLabel + 1;
+            if sum(clusterCurrentMask)>2
+                currentX = currentXY(clusterCurrentMask,1);
+                currentY = currentXY(clusterCurrentMask,2);
+                previousX = previousXY(:,1);
+                previousY = previousXY(:,2);
+
+                p = boundary(currentX,currentY);
+                in = inpolygon(previousX,previousY,currentX(p),currentY(p));
+                if numel(previousX(and(in,previousActive))) > 0
+                    previousTracked(and(in,previousActive)) = maxLabel;
+                end
+            end
+            %Initialize a new Cluster Label and assign to all points in this Cluster
+            labelTracked(clusterCurrentMask) = maxLabel;
+
+        elseif nNew == 1  	%IF only one past Cluster is mapped
+            %Assing ALL points in this Cluster to that Label (including points mapped to nothing)
+            labelTracked(clusterCurrentMask) = newLabelList;
+
+        elseif nNew > 1		%IF this Cluster maps to multiple past Clusters
+            %Make linear index mask of previous Labels mapped to this Cluster
+            prevMask = find(ismember(previousTracked,newLabelList));
+            %Get indices of (previous) nearest neighbors to points in this Cluster
+            idxPrev = knnsearch(previousXY(prevMask,:), currentXY(clusterCurrentMask,:));
+            %Assign each point to the cluster of its nearest neighbor (only from newLabelList...)
+            labelTracked(clusterCurrentMask) = previousTracked(prevMask(idxPrev));
+        end
+    end
+end
+
+function clust_by_time = formatLegacy(labelTracked,labelUntracked,XCoord,YCoord,epsilon,minpts,maxLabels)
+	% formatLegacy is a reformatting function to convert arcos_core data to
+	
+	[nCells,nTime] = size(labelUntracked);
+
+	% Each row of clust_by_time is a timepoint.
+	% At each timepoint we have untracked and tracked structs, eps,
+	% minpts and a newmax value.
+
+	clust_by_time = struct("untracked",{},"tracked",{},"eps",{},"minpts",{},"newmax",{});
+
+
+	for time = 1:nTime
+		
+		%tTracked = labelTracked(:,time);						%Tracked labels for time
+		%tUntracked = labelUntracked(:,time);					%Untracked labels for time
+		%active = allActive{time};								%Active cells for time;
+		%activeXY = [XCoord(active,time),YCoord(active,time)];	%XYCoords for time
+
+		
+																% Build untracked
+																% Within untracked each row is a cluster
+																% Each cluster has XYCoords and an id
+
+
+		
+		untracked = struct("XYCoord",{},"id",{});
+
+		%mapActiveUntracked = tUntracked ~= 0;					%Mapping of active cells in untracked
+		%activeUntracked = tUntracked(mapActiveUntracked);		%Labels of active cells in untracked
+		uniqueUntracked = unique(labelUntracked(labelUntracked(:,time)~=0,time));				%Unique  untracked labels ~=0
+		for iu = 1:length(uniqueUntracked)						%For every unique untracked label
+			u = uniqueUntracked(iu);							%Current indexed unique label
+			%clusterXY = activeXY(activeUntracked == u,:);		%Coordinates for that label
+			clusterXY = [XCoord(labelUntracked(:,time) == u,time),YCoord(labelUntracked(:,time)==u,time)];
+			untracked(iu).XYCoord = clusterXY;
+			untracked(iu).id = u;
+		end
+
+																% Tracked is similar to untracked with some notable differences
+																% In tracked, the id has 2 elements: the untracked id and the
+																% tracked id
+																% Tracked also has a flag for whether the cluster id 
+																% is "new" (less than newmax from the previous timepoint)
+																% The first element of id may not be used by any downstream
+																% function and is being considered for deprecation. 
+																% Newmax is also unused and may be deprecated
+
+
+		tracked = struct("XYCoord",{},"id",{},"new",{});
+
+
+		%mapActiveTracked = tTracked ~= 0;
+		%activeTracked = tTracked(mapActiveTracked);
+		uniqueTracked = unique(labelTracked(labelTracked(:,time)~=0,time));
+		
+		for it = 1:length(uniqueTracked)
+			t = uniqueTracked(it);
+			%clusterXY = activeXY(activeTracked == t,:);
+			clusterXY = [XCoord(labelTracked(:,time) == t,time),YCoord(labelTracked(:,time)==t,time)];
+			tracked(it).XYCoord = clusterXY;
+			trackedID = repmat(t,height(clusterXY),1); % Repeat t for the number of cells we have
+			% untracked labels for the current tracked labels
+
+			untrackedID = labelUntracked(labelTracked(:,time)==t,time);
+			%tracked(it).id = [activeUntracked(activeTracked==t),trackedID];
+			tracked(it).id = [untrackedID,trackedID];
+			if (time > 1) && (t < maxLabels(time-1))
+				tracked(it).new = 1;
+			else
+				tracked(it).new = 0;
+			end
+			
+		end
+		
+		
+
+
+		clust_by_time(time).untracked = untracked;
+		clust_by_time(time).tracked = tracked;
+		clust_by_time(time).eps = epsilon(time);
+		clust_by_time(time).minpts = minpts(time);
+		clust_by_time(time).newmax = maxLabels(time);
+	end
+end
+
+
+
+
+
+
+##### SOURCE END #####
+--></body></html>

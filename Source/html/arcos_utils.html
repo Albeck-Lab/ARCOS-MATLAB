@@ -1,4 +1,76 @@
 
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>arcos_utils</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2024-02-12"><meta name="DC.source" content="arcos_utils.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1></h1><!--introduction--><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">ARCOS Utils (Utilities)</a></li><li><a href="#2">formatR</a></li><li><a href="#3">prep_dbscan</a></li><li><a href="#4">prep_dbscan2</a></li><li><a href="#5">binarize</a></li><li><a href="#6">pulse2bin</a></li><li><a href="#7">gensynth</a></li><li><a href="#8">reformat</a></li><li><a href="#9">binarize_robust</a></li><li><a href="#10">Convert ARCOS Analysis Data</a></li><li><a href="#11">Make Arcos DF</a></li></ul></div><h2 id="1">ARCOS Utils (Utilities)</h2><p>Class with various static utility functions</p><h2 id="2">formatR</h2><p>Method for formatting data such that it can be read by the R version of ARCOS. Outputs a csv (comma separated value) file.</p><p><b>Inputs</b></p><div><ul><li><b>filename</b> - <tt>String</tt>, <tt>Char</tt> - Desired output csv file name. Must contain legal characters only. Do not include the file extension in the name.</li><li><b>XCoord</b> - <tt>Array</tt> - An array of doubles containing the X coordinates for tracked cells. Must be organized such that rows are individual tracked cells and columns are timepoints.</li><li><b>YCoord</b> - <tt>Array</tt> - An array of doubles containing the Y coordinates for tracked cells. Must be organized such that rows are individual tracked cells and columns are timepoints.</li><li><b>bin</b> - <tt>Array</tt> - A logical array indicating active and inactive cells. Must be organized such that rows are individual tracked cells and columns are timepoints.</li></ul></div><p><b>Output</b></p><div><ul><li><b>out</b> - <tt>Table</tt> - A table formatted to be read by the R version of ARCOS. This will be saved to the workspace, but the csv file will be saved to the current working directoy unless a full path is given for the filename.</li></ul></div><h2 id="3">prep_dbscan</h2><p>Method for determining optimal epsilon and minpts values for DBSCAN.</p><p>This method assumes that the optimal epsilon value is at the "elbow" or "knee" of the graph of k-nearest-neighbors distances for all datapoints.</p><p>This method supplies epsilon and minpts values for a single microscope field at a single timepoint.</p><p>This method first asserts minpts = 2*dim where dim is the dimensionality of the data.</p><p>Next, it calculates the distances to the k-nearest neighbors where k = minpts, takes the maximum distances, scales them, applies gaussian smoothing and takes the first derivative.</p><p>The ideal epsilon is the first point whose tangent line has a slope of 1.</p><p><b>Inputs</b></p><div><ul><li><b>XCoord</b> - <tt>Array</tt> - An array of doubles containing the X coordinates for tracked cells. Must be organized such that rows are individual tracked cells and columns are timepoints.</li><li><b>YCoord</b> - <tt>Array</tt> - An array of doubles containing the Y coordinates for tracked cells. Must be organized such that rows are individual tracked cells and columns are timepoints.</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>eps</b> - <tt>Double</tt> - The epsilon parameter of DBSCAN.</li><li><b>minpts</b> - <tt>Integer</tt> - The minpts parameter of DBSCAN.</li></ul></div><h2 id="4">prep_dbscan2</h2><p>A method for determining optimal epsilon and minpts values for DBSCAN.</p><p>This method increases minpts when data points are densely distributed or noisey and lowers minpts when they are sparsely distributed.</p><p>To ensure that DBSCAN runs as expected, minpts has a lower cap of 3. Minpts values &lt; 3</p><p>Epsilon is calculated as the median of k-nearest neighbors distances where k = 11.</p><p><b>Inputs</b></p><div><ul><li><b>XCoord</b> - <tt>Array</tt> - An array of doubles containing the X coordinates for tracked cells. Must be organized such that rows are individual tracked cells and columns are timepoints.</li><li><b>YCoord</b> - <tt>Array</tt> - An array of doubles containing the Y coordinates for tracked cells. Must be organized such that rows are individual tracked cells and columns are timepoints.</li><li><b>bin</b> - <tt>Logical array</tt> - A logical array representing the binarized channel data for the currently indexed well/xy (1 = active, 0 = inactive).</li><li><i>varargin</i> = <tt>Option-value pair</tt> - Accepts optional inputs as option-value pairs.</li></ul></div><p><b>Optional Inputs</b></p><div><ul><li><b>n</b> - <tt>Integer</tt> - The nth nearest neighbor to use for knnsearch.</li></ul></div><p><b>Ouputs</b></p><div><ul><li><b>eps</b> - <tt>Double</tt> - The epsilon parameter of DBSCAN.</li><li><b>minpts</b> - <tt>Integer</tt> - The minpts parameter of DBSCAN.</li></ul></div><h2 id="5">binarize</h2><p>Method for binarizing channel data using a simple percentile threshold.</p><p>Channel data for all xys/wells are loaded into memory and the specified percentile of the data is used to threshold and binarize.</p><p><b>Inputs</b></p><div><ul><li><b>raw_data</b> - <tt>Cell</tt> - Cell array containing processed data. Ex dataloc.d</li><li><b>xy</b> - <tt>Array</tt> - An array of integers representing indices of wells/xys to process. Supports discontinuous ranges - Ex (1:5, 10:20)</li><li><b>ch</b> - <tt>String</tt>, <tt>Char</tt> - The name of the channel to process - Ex 'nEKAR'.</li><li><b>perc</b> - <tt>Double</tt>, <tt>Integer</tt> - The percentile of the data by which it will be thresholded.</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>bin</b> - <tt>Cell</tt> - A cell array where each cell is binary data for the indexed well/xy.</li><li><b>threshold</b> - <tt>Double</tt> - The value by which the channel data are thresholded. Signals above this value are considered "on", signals below are "off".</li></ul></div><h2 id="6">pulse2bin</h2><p>Method of binarizing pulse analysis data.</p><p><b>Inputs</b></p><div><ul><li><b>pulseAnalysisData</b> - <tt>Unknown</tt> - Pulse analysis data. Ask Nick DeCuzzi for clarification.</li><li><b>raw_data</b> - <tt>Cell</tt> - Cell array containing processed data. Ex dataloc.d</li><li><b>channel</b> - <tt>String</tt>, <tt>Char</tt> - The channel to binarize</li></ul></div><p><b>Outputs</b></p><p><b>out</b> - <tt>Cell</tt> - Cell array where each cell is binarized data for the indexed well/xy.</p><h2 id="7">gensynth</h2><p>Method to create artificial collective activity for process validation and demonstration. This method uses X and Y coordinates from real data and layers synthetic activity onto those points.</p><p><b>Inputs</b></p><div><ul><li><b>raw_data</b> - <tt>Cell</tt> - Cell array containing processed data. Ex dataloc.d</li><li><b>xy</b> - <tt>Array</tt> - An array of integers representing indices of wells/xys to process. Supports discontinuous ranges - Ex (1:5, 10:20)</li><li><i>varargin</i> - <tt>Option-value pair</tt> - Supports additional inputs as option-value pairs. Ex 'numspreads', 7</li></ul></div><p><b>Optional Inputs</b></p><div><ul><li><b>numspreads</b> - <tt>Integer</tt> - The number of spreads you'd like to generate per cycle. <b>Default value: 7</b></li><li><b>freq</b> - <tt>Integer</tt> - How frequently cycles occur. <b>Default value: 10</b></li><li><b>bin</b> - <tt>Array</tt> - Logical array with binarized channel data. This is layered over synthetic spreads to add noise.</li><li><b>dist</b> - <tt>Double</tt> - Distance the spread grows per frame (typically a the epsilon value given by prep_dbscan works well for dist) *Default value: 65</li><li><b>lifetime</b> - <tt>Integer</tt> - How many timepoints cells remain in the "on" or "active" state. <b>Default value: 3</b></li><li><b>seed</b> - <tt>Integer</tt>, <tt>Double</tt>, <tt>String</tt>, <tt>Char</tt> - a seed value to initialize the random number generator. Using the same seed value with the same data will yield the same results each time, making the number generator pseudo-random. Ex: 'potato', 6.022, 4815162342, "Orange" <b>Default value: []</b></li><li><b>maxsize</b> - <tt>Double</tt>, <tt>Integer</tt> - Maximum spread size, as multiples of the dist value. If dist is 60 and maxsize is 3 then the maximum size will be 180. <b>Default value: 2.8</b></li></ul></div><p><b>Output</b></p><div><ul><li><b>bin_synth</b> - <tt>Cell</tt> - Cell array containing synthetic binarized data for the desired wells/xys</li></ul></div><h2 id="8">reformat</h2><p>Helper function to take ARCOS data organized clusters by time and reformat it to clusters by ID.</p><p><b>Input</b></p><div><ul><li><b>cdata</b> - <tt>Cell</tt> - Cluster data. If using arcos_core, the main output of that method. If using arcos, the clust_by_time output.</li></ul></div><p><b>Output</b></p><div><ul><li><b>out</b> - <tt>Cell</tt> - Clusters by ID. Analogous to the clust_by_id output of arcos.</li></ul></div><h2 id="9">binarize_robust</h2><p>Method with three different ways to robustly binarize channel data.</p><div><ol><li><b>znorm</b></li><li><b>robust</b> aka <b>selfrobust</b></li><li><b>specialrobust</b></li></ol></div><p><b>Inputs</b></p><div><ul><li><b>raw_data</b> - <tt>Cell</tt> - Cell array containing processed data. Ex dataloc.d</li><li><b>xy</b> - <tt>Array</tt> - An array of integers representing indices of wells/xys to process. Supports discontinuous ranges - Ex (1:5, 10:20)</li><li><b>ctrl</b> - <tt>Array</tt> - An array of integers representing indices of control wells/xys.</li></ul></div><h2 id="10">Convert ARCOS Analysis Data</h2><p>Converts ARCOS in given dataloc (version &gt; 3 required) structure in a table (that can be used like a dataframe)</p><p><b>Inputs</b></p><div><ul><li><b>dataloc</b> - <tt>Struct</tt> - dataloc struct or cell array of (can be mixed) dataloc structs and paths to datalocs</li><li><b>channel</b> - <tt>Cell</tt>, <tt>String</tt> - ARCOS channel you want to convert (ex: EKAR), can be cell array for each dataloc or single channel</li></ul></div><p><b>Optional Inputs</b></p><div><ul><li><b>tstartaftertx</b> - <tt>Integer</tt> -how many HOURS before starting to consider data after the given treatment (default is 0)</li><li><b>tmaxaftertx</b> - how many HOURS after the tx are allowed to be considered? (default is whole movie after tx)</li><li><b>aftertx</b> - after which tx should data be considered? (default is first tx for that xy)</li><li><b>exclude</b> - treatments to exclude (default = none)</li><li><b>txs</b> - <tt>Cell</tt> - txs to consider (default = {'pTx','Tx1','Tx2','Tx3','Tx4'})</li></ul></div><div><ul><li><b>boxsize</b> - how big should the square for "hotspot" detection be? (in uM) (will be boxsize uM by boxsize uM) (default = 30)</li><li><b>smlthresh</b> - time thresholds for short, medium, and long spread durations (default = [0,0.5,1]) given in hours</li></ul></div><div><ul><li><b>meanreplicates</b> - mean technical replicates? (default = false)</li><li><b>standardize</b> - standardize the data? (default = false)</li></ul></div><p><b>Example usage</b></p><pre class="language-matlab">arcosDF = Convert_Arcos_Analysis_Data(dataloc, channel, varargin)
+</pre><p><tt>Copyright. Nicholaus DeCuzzi. 2023</tt></p><h2 id="11">Make Arcos DF</h2><p><b>Inputs</b></p><div><ul><li><b>dataloc</b> - <tt>Struct</tt></li><li><b>channel</b></li></ul></div><p><b>Optional inputs</b></p><div><ul><li><b>tktm</b></li><li><b>tstartaftertx</b></li><li><b>tmaxaftertx</b></li><li><b>txs</b></li><li><b>exclude</b></li><li><b>varNames</b></li><li><b>varTypes</b></li><li><b>boxsize</b></li><li><b>alreadysizenormalized</b></li><li><b>smlthresh</b></li><li><b>aftertx</b></li><li><b>meanreplicates</b></li><li><b>standardize</b></li></ul></div><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+
 %% ARCOS Utils (Utilities)
 % Class with various static utility functions
 %
@@ -990,3 +1062,5 @@ classdef arcos_utils
         end % makeArcosDF function% of methods
 	end
 end
+##### SOURCE END #####
+--></body></html>
