@@ -2,6 +2,7 @@
 % The core clustering functions of ARCOS
 % 
 %% ARCOS_Core
+% Performs clustering and tracking on one well's worth of time series data.
 %
 % *Inputs*
 %
@@ -20,68 +21,95 @@
 %
 % *Outputs*
 %
-% * *cdata* - |struct| - Cluster data organized by time
+% * *labelTracked* - |Integer Array| - Array with integers denoting cluster
+% assignment
 % * *warnings* - |Table| - Warnings indicating where poor clustering may
 % have occurred
+% * *optionalOut* - |Cell| - Cell array containing data used or calculated
+% during processing. Useful for debugging or troubleshooting unexpected
+% results.
+% 
+% <html>
+% <ul>
+% <ol>
+% <li> allActive - <tt> Cell </tt> - Cell array where each cell item is a logical map of the active cells for that timepoint</li>
+% <li> labelUntracked - <tt> Double </tt> - Untracked cluster assignments from DBSCAN</li>
+% <li> epsilon - <tt> Double </tt> - Epsilon value for each timepoint</li>
+% <li> minpts - <tt> Double </tt> - Minpts value for each timepoint</li>
+% <li> maxLabels - <tt> Double </tt>- The greatest label assignment for each timepoint </li>
+% <li> clust_by_time - <tt> Struct </tt> - Legacy formatted output. Struct with cluster assignments per time.</li>
+% </ol>
+% </ul>
+% </html>
 %
 %% Clustering
 % Clustering of active cells via DBSCAN
 %
 % *Inputs*
 %
-% * *activeXY* - |Double array| - X and Y coordinates for active cells
+% * *activeXY* - |Double| - X and Y coordinates for active cells
 % * *epsilon* - |Double| - epsilon value for DBSCAN
 % * *minpts* - |Integer| - Minpts value for DBSCAN
-% * _varargin_ - |Option-value pair| - Accepts addition inputs as
-% option-value pairs. Ex 'debug', true. 
-%
-% * Optional Inputs*
-%
-% * *debug* - |Boolean|, |Logical| - Debug logging toggle. *Default value:
-% false*
-% * *verbose* - |Boolean|, |Logical| - Verbose logging toggle. *Default
-% value: true*
 %
 % *Ouputs*
 %
-% * *out* - |Struct| - struct containing XY coordinates of clustered cells
-% and their cluster IDs
-%
+% * *label* - |Integer Array| - Array of untracked cluster assignments
 %
 %% Tracking
 % Tracking method that reassigns cluster IDs based on knnsearch
 %
 % *Inputs*
 %
-% * *sCurr* - |Struct| - Struct containing the currently indexed untracked
-% cluster data
-% * *sPrev* - |Struct| - Struct containing the previously indexed tracked
-% cluster data
-% * *bPrev* - |Struct| - Struct containing the previously indexed untracked
-% cluster data
-% * *epsilon* - |Double| - epsilon value used to cluster the currently indexed
-% data. Used in knnsearch algorithm
-% * *maxLabel* - |Integer| - Max cluster ID assigned in the _previous_ tracking
-% iteration
+% * *currentUntracked* - |Double| - Array of untracked cluster labels for
+% the timepoint being processed
+% * *previousTracked* - |Double| - Array of tracked cluster labels for the
+% timepoint prior to the one currently being processed
+% * *currentXY* - |Double| - Array with X and Y coordinates for the
+% currently processed timepoint
+% * *previousXY* - |Double| - Array with X and Y coordinates for the
+% previously processed timepoint
+% * *previousActive* - |Logical| - Binarization data for the previous
+% timepoint
+% * *epsilon* - |Double| - Epsilon value for the timepoint currently being
+% processed
+% * *maxLabel* - |Integer| - Greatest cluster assignment for the timepoint
+% currently being processed.
 %
 % *Outputs*
 %
-% * *tracks* - |Struct| - Structure containing XY coordinates, cluster ID
-% lineage and a flag indicating whether a cluster reassignment is unique
-% * *maxLabel* - |Integer| - Max cluster ID assigned in the _current_ tracking
-% iteration
+% * *labelTracked* - |Integer| - Tracked cluster assignments for the
+% current timepoint
+% * *previousTracked* - |Integer| - Corrected tracked cluster assignments
+% for the previous timepoint (Corrected if within the boundary of a cluster
+% in the current timepoint, a previous active cell is found in the previous
+% timepoint. In these cases the previous point may have been culled as an
+% outlier so we've included a process to assign it to the current cluster.)
+% 
 %
-%% Unpack
-% Helper function to unpack structs into arrays.
+%% formatLegacy
+% Reformatting function that assembles cluster data as a struct.
+% "Legacy" formatting was used in an early version of this ARCOS port.
+% Some downstream analytical and plotting functions still rely on this
+% formatting.
 %
 % *Inputs*
 %
-% * *d* - |Struct| - Struct to be unpacked into an array
+% * *labelTracked* - |Integer| -All tracked labels
+% * *labelUntracked* - |Integer| - All untracked labels
+% * *XCoord* - |Integer| - All X coordinates
+% * *YCoord* - |Double| - All Y coordinates
+% * *epsilon* - |Double| - All epsilon values
+% * *minpts* - |Logical| - All minpts values
+% * *maxLabels* - |Double| - The greatest cluster assignment for each
+% timepoint
 %
 % *Outputs*
 %
-% * *xy* - |Array| - Array of X and Y coordinates unpacked from the
-% inputted struct
+% * *clust_by_time* - |Struct| -  Struct with fields
+% "untracked", "tracked", "eps", "minpts" and "newmax".
+% Untracked is a struct with fields "XYCoord" and "id"
+% Tracked is a struct with fields "XYCoord", "id" and "new".
+% See in-line documentation for more details.
 %
 %% Examples
 % See "core_only.mlx" in the Demos folder to use ARCOS Core by itself
@@ -163,19 +191,19 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 				labelTracked(:,time-1) = previousTracked;
 
 				%labelUntracked(delta,time-1) = previousTracked(delta)+max(labelUntracked(:,time-1));
-%{ 
-for plotting spreads in real time              
-                if sum(previousTracked) < 0
-                    clrz = hsv(numel(unique(previousTracked))-1);
-                    clrz = clrz(randperm(size(clrz,1)),:);
-                    clrz = [0.95,0.95,0.95; clrz];
-                    nexttile(1);
-                    gscatter(labelTracked(:,time-1),previousXY(:,2),previousTracked,clrz,".",15);
-                    nexttile(2);
-                    gscatter(previousXY(:,1),previousXY(:,2),previousTracked,clrz,".",15);
-                    pause(0.1)
-                end
-%}
+				%{ 
+				for plotting spreads in real time              
+                				if sum(previousTracked) < 0
+                    				clrz = hsv(numel(unique(previousTracked))-1);
+                    				clrz = clrz(randperm(size(clrz,1)),:);
+                    				clrz = [0.95,0.95,0.95; clrz];
+                    				nexttile(1);
+                    				gscatter(labelTracked(:,time-1),previousXY(:,2),previousTracked,clrz,".",15);
+                    				nexttile(2);
+                    				gscatter(previousXY(:,1),previousXY(:,2),previousTracked,clrz,".",15);
+                    				pause(0.1)
+                				end
+				%}
 		else
             labelTracked(active,time) = labelUntracked(active,time);
 		end
@@ -200,7 +228,6 @@ for plotting spreads in real time
 	optionalOut{6} = formatLegacy(labelTracked,labelUntracked,XCoord,YCoord,epsilon,minpts,maxLabels); % This is clust_by_time
 end
 
-
 function label = clustering(activeXY, epsilon, minpts)
 	%Short-circuit on empty input
 	if isempty(activeXY)
@@ -212,10 +239,8 @@ function label = clustering(activeXY, epsilon, minpts)
 	label(label==-1) = 0; %Change outlier cluster IDs to 0 (unclustered)
 end
 
-
-
 function [labelTracked,previousTracked] = tracking(currentUntracked,previousTracked,currentXY,previousXY,previousActive,epsilon,maxLabel)
-	labelTracked = zeros(size(currentUntracked)); %FIXME - Maybe not initialize, because Untracke labels are not 
+	labelTracked = zeros(size(currentUntracked)); %FIXME - Maybe not initialize, because Untracked labels are not 
 	%	constrained with respect to previous tracked labels.  Could randomly equal previous labels?
 	
 	%Get indices and distances of current points' neighbors in previous frame

@@ -67,7 +67,7 @@ Section B
 			The solution, therefore, is to run arcos_analysis.analyze() and try again.
 
 Section C
-	Choose one:
+	Coming soon
                                                                     
 
 

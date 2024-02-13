@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>ARCOS Core</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2024-02-12"><meta name="DC.source" content="arcos_core.m"><style type="text/css">
+      --><title>ARCOS Core</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2024-02-13"><meta name="DC.source" content="arcos_core.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -67,12 +67,24 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1>ARCOS Core</h1><!--introduction--><p>The core clustering functions of ARCOS</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">ARCOS_Core</a></li><li><a href="#2">Clustering</a></li><li><a href="#3">Tracking</a></li><li><a href="#4">Unpack</a></li><li><a href="#5">Examples</a></li><li><a href="#6">See also</a></li></ul></div><h2 id="1">ARCOS_Core</h2><p><b>Inputs</b></p><div><ul><li><b>XCoord</b> - <tt>Double array</tt> - X coordinates of tracked cells</li><li><b>YCoord</b> - <tt>Double array</tt> - Y coordinates of tracked cells</li><li><b>bin</b> - <tt>Logical array</tt> - binary data</li><li><b><i>varargin</i></b> - <tt>Option-value pairs</tt> - Accepts optional inputs as option-value pairs. Ex: 'epsilon', 60</li></ul></div><p><b>Optional Inputs</b></p><div><ul><li><b>epsilon</b> - <tt>Double</tt> - Optional epsilon value for DBSCAN. Automatically calculated if left empty.</li><li><b>minpts</b> - <tt>Integer</tt> - Optional minpts value for DBSCAN. Automatically calculated if left empty.</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>cdata</b> - <tt>struct</tt> - Cluster data organized by time</li><li><b>warnings</b> - <tt>Table</tt> - Warnings indicating where poor clustering may have occurred</li></ul></div><h2 id="2">Clustering</h2><p>Clustering of active cells via DBSCAN</p><p><b>Inputs</b></p><div><ul><li><b>activeXY</b> - <tt>Double array</tt> - X and Y coordinates for active cells</li><li><b>epsilon</b> - <tt>Double</tt> - epsilon value for DBSCAN</li><li><b>minpts</b> - <tt>Integer</tt> - Minpts value for DBSCAN</li><li><i>varargin</i> - <tt>Option-value pair</tt> - Accepts addition inputs as option-value pairs. Ex 'debug', true.</li></ul></div><div><ul><li>Optional Inputs*</li></ul></div><div><ul><li><b>debug</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Debug logging toggle. <b>Default value: false</b></li><li><b>verbose</b> - <tt>Boolean</tt>, <tt>Logical</tt> - Verbose logging toggle. <b>Default value: true</b></li></ul></div><p><b>Ouputs</b></p><div><ul><li><b>out</b> - <tt>Struct</tt> - struct containing XY coordinates of clustered cells and their cluster IDs</li></ul></div><h2 id="3">Tracking</h2><p>Tracking method that reassigns cluster IDs based on knnsearch</p><p><b>Inputs</b></p><div><ul><li><b>sCurr</b> - <tt>Struct</tt> - Struct containing the currently indexed untracked cluster data</li><li><b>sPrev</b> - <tt>Struct</tt> - Struct containing the previously indexed tracked cluster data</li><li><b>bPrev</b> - <tt>Struct</tt> - Struct containing the previously indexed untracked cluster data</li><li><b>epsilon</b> - <tt>Double</tt> - epsilon value used to cluster the currently indexed data. Used in knnsearch algorithm</li><li><b>maxLabel</b> - <tt>Integer</tt> - Max cluster ID assigned in the <i>previous</i> tracking iteration</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>tracks</b> - <tt>Struct</tt> - Structure containing XY coordinates, cluster ID lineage and a flag indicating whether a cluster reassignment is unique</li><li><b>maxLabel</b> - <tt>Integer</tt> - Max cluster ID assigned in the <i>current</i> tracking iteration</li></ul></div><h2 id="4">Unpack</h2><p>Helper function to unpack structs into arrays.</p><p><b>Inputs</b></p><div><ul><li><b>d</b> - <tt>Struct</tt> - Struct to be unpacked into an array</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>xy</b> - <tt>Array</tt> - Array of X and Y coordinates unpacked from the inputted struct</li></ul></div><h2 id="5">Examples</h2><p>See "core_only.mlx" in the Demos folder to use ARCOS Core by itself</p><p>Otherwise, see default_params.mlx in the Demos folder.</p><h2 id="6">See also</h2><p>dbscan, knnsearch</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+  </style></head><body><div class="content"><h1>ARCOS Core</h1><!--introduction--><p>The core clustering functions of ARCOS</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">ARCOS_Core</a></li><li><a href="#2">Clustering</a></li><li><a href="#3">Tracking</a></li><li><a href="#4">formatLegacy</a></li><li><a href="#5">Examples</a></li><li><a href="#6">See also</a></li></ul></div><h2 id="1">ARCOS_Core</h2><p>Performs clustering and tracking on one well's worth of time series data.</p><p><b>Inputs</b></p><div><ul><li><b>XCoord</b> - <tt>Double array</tt> - X coordinates of tracked cells</li><li><b>YCoord</b> - <tt>Double array</tt> - Y coordinates of tracked cells</li><li><b>bin</b> - <tt>Logical array</tt> - binary data</li><li><b><i>varargin</i></b> - <tt>Option-value pairs</tt> - Accepts optional inputs as option-value pairs. Ex: 'epsilon', 60</li></ul></div><p><b>Optional Inputs</b></p><div><ul><li><b>epsilon</b> - <tt>Double</tt> - Optional epsilon value for DBSCAN. Automatically calculated if left empty.</li><li><b>minpts</b> - <tt>Integer</tt> - Optional minpts value for DBSCAN. Automatically calculated if left empty.</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>labelTracked</b> - <tt>Integer Array</tt> - Array with integers denoting cluster assignment</li><li><b>warnings</b> - <tt>Table</tt> - Warnings indicating where poor clustering may have occurred</li><li><b>optionalOut</b> - <tt>Cell</tt> - Cell array containing data used or calculated during processing. Useful for debugging or troubleshooting unexpected results.</li></ul></div><p>
+<ul>
+<ol>
+<li> allActive - <tt> Cell </tt> - Cell array where each cell item is a logical map of the active cells for that timepoint</li>
+<li> labelUntracked - <tt> Double </tt> - Untracked cluster assignments from DBSCAN</li>
+<li> epsilon - <tt> Double </tt> - Epsilon value for each timepoint</li>
+<li> minpts - <tt> Double </tt> - Minpts value for each timepoint</li>
+<li> maxLabels - <tt> Double </tt>- The greatest label assignment for each timepoint </li>
+<li> clust_by_time - <tt> Struct </tt> - Legacy formatted output. Struct with cluster assignments per time.</li>
+</ol>
+</ul>
+</p><h2 id="2">Clustering</h2><p>Clustering of active cells via DBSCAN</p><p><b>Inputs</b></p><div><ul><li><b>activeXY</b> - <tt>Double</tt> - X and Y coordinates for active cells</li><li><b>epsilon</b> - <tt>Double</tt> - epsilon value for DBSCAN</li><li><b>minpts</b> - <tt>Integer</tt> - Minpts value for DBSCAN</li></ul></div><p><b>Ouputs</b></p><div><ul><li><b>label</b> - <tt>Integer Array</tt> - Array of untracked cluster assignments</li></ul></div><h2 id="3">Tracking</h2><p>Tracking method that reassigns cluster IDs based on knnsearch</p><p><b>Inputs</b></p><div><ul><li><b>currentUntracked</b> - <tt>Double</tt> - Array of untracked cluster labels for the timepoint being processed</li><li><b>previousTracked</b> - <tt>Double</tt> - Array of tracked cluster labels for the timepoint prior to the one currently being processed</li><li><b>currentXY</b> - <tt>Double</tt> - Array with X and Y coordinates for the currently processed timepoint</li><li><b>previousXY</b> - <tt>Double</tt> - Array with X and Y coordinates for the previously processed timepoint</li><li><b>previousActive</b> - <tt>Logical</tt> - Binarization data for the previous timepoint</li><li><b>epsilon</b> - <tt>Double</tt> - Epsilon value for the timepoint currently being processed</li><li><b>maxLabel</b> - <tt>Integer</tt> - Greatest cluster assignment for the timepoint currently being processed.</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>labelTracked</b> - <tt>Integer</tt> - Tracked cluster assignments for the current timepoint</li><li><b>previousTracked</b> - <tt>Integer</tt> - Corrected tracked cluster assignments for the previous timepoint (Corrected if within the boundary of a cluster in the current timepoint, a previous active cell is found in the previous timepoint. In these cases the previous point may have been culled as an outlier so we've included a process to assign it to the current cluster.)</li></ul></div><h2 id="4">formatLegacy</h2><p>Reformatting function that assembles cluster data as a struct. "Legacy" formatting was used in an early version of this ARCOS port. Some downstream analytical and plotting functions still rely on this formatting.</p><p><b>Inputs</b></p><div><ul><li><b>labelTracked</b> - <tt>Integer</tt> -All tracked labels</li><li><b>labelUntracked</b> - <tt>Integer</tt> - All untracked labels</li><li><b>XCoord</b> - <tt>Integer</tt> - All X coordinates</li><li><b>YCoord</b> - <tt>Double</tt> - All Y coordinates</li><li><b>epsilon</b> - <tt>Double</tt> - All epsilon values</li><li><b>minpts</b> - <tt>Logical</tt> - All minpts values</li><li><b>maxLabels</b> - <tt>Double</tt> - The greatest cluster assignment for each timepoint</li></ul></div><p><b>Outputs</b></p><div><ul><li><b>clust_by_time</b> - <tt>Struct</tt> -  Struct with fields "untracked", "tracked", "eps", "minpts" and "newmax". Untracked is a struct with fields "XYCoord" and "id" Tracked is a struct with fields "XYCoord", "id" and "new". See in-line documentation for more details.</li></ul></div><h2 id="5">Examples</h2><p>See "core_only.mlx" in the Demos folder to use ARCOS Core by itself</p><p>Otherwise, see default_params.mlx in the Demos folder.</p><h2 id="6">See also</h2><p>dbscan, knnsearch</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 %% ARCOS Core
 % The core clustering functions of ARCOS
 % 
 %% ARCOS_Core
+% Performs clustering and tracking on one well's worth of time series data.
 %
 % *Inputs*
 %
@@ -91,68 +103,95 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 %
 % *Outputs*
 %
-% * *cdata* - |struct| - Cluster data organized by time
+% * *labelTracked* - |Integer Array| - Array with integers denoting cluster
+% assignment
 % * *warnings* - |Table| - Warnings indicating where poor clustering may
 % have occurred
+% * *optionalOut* - |Cell| - Cell array containing data used or calculated
+% during processing. Useful for debugging or troubleshooting unexpected
+% results.
+% 
+% <html>
+% <ul>
+% <ol>
+% <li> allActive - <tt> Cell </tt> - Cell array where each cell item is a logical map of the active cells for that timepoint</li>
+% <li> labelUntracked - <tt> Double </tt> - Untracked cluster assignments from DBSCAN</li>
+% <li> epsilon - <tt> Double </tt> - Epsilon value for each timepoint</li>
+% <li> minpts - <tt> Double </tt> - Minpts value for each timepoint</li>
+% <li> maxLabels - <tt> Double </tt>- The greatest label assignment for each timepoint </li>
+% <li> clust_by_time - <tt> Struct </tt> - Legacy formatted output. Struct with cluster assignments per time.</li>
+% </ol>
+% </ul>
+% </html>
 %
 %% Clustering
 % Clustering of active cells via DBSCAN
 %
 % *Inputs*
 %
-% * *activeXY* - |Double array| - X and Y coordinates for active cells
+% * *activeXY* - |Double| - X and Y coordinates for active cells
 % * *epsilon* - |Double| - epsilon value for DBSCAN
 % * *minpts* - |Integer| - Minpts value for DBSCAN
-% * _varargin_ - |Option-value pair| - Accepts addition inputs as
-% option-value pairs. Ex 'debug', true. 
-%
-% * Optional Inputs*
-%
-% * *debug* - |Boolean|, |Logical| - Debug logging toggle. *Default value:
-% false*
-% * *verbose* - |Boolean|, |Logical| - Verbose logging toggle. *Default
-% value: true*
 %
 % *Ouputs*
 %
-% * *out* - |Struct| - struct containing XY coordinates of clustered cells
-% and their cluster IDs
-%
+% * *label* - |Integer Array| - Array of untracked cluster assignments
 %
 %% Tracking
 % Tracking method that reassigns cluster IDs based on knnsearch
 %
 % *Inputs*
 %
-% * *sCurr* - |Struct| - Struct containing the currently indexed untracked
-% cluster data
-% * *sPrev* - |Struct| - Struct containing the previously indexed tracked
-% cluster data
-% * *bPrev* - |Struct| - Struct containing the previously indexed untracked
-% cluster data
-% * *epsilon* - |Double| - epsilon value used to cluster the currently indexed
-% data. Used in knnsearch algorithm
-% * *maxLabel* - |Integer| - Max cluster ID assigned in the _previous_ tracking
-% iteration
+% * *currentUntracked* - |Double| - Array of untracked cluster labels for
+% the timepoint being processed
+% * *previousTracked* - |Double| - Array of tracked cluster labels for the
+% timepoint prior to the one currently being processed
+% * *currentXY* - |Double| - Array with X and Y coordinates for the
+% currently processed timepoint
+% * *previousXY* - |Double| - Array with X and Y coordinates for the
+% previously processed timepoint
+% * *previousActive* - |Logical| - Binarization data for the previous
+% timepoint
+% * *epsilon* - |Double| - Epsilon value for the timepoint currently being
+% processed
+% * *maxLabel* - |Integer| - Greatest cluster assignment for the timepoint
+% currently being processed.
 %
 % *Outputs*
 %
-% * *tracks* - |Struct| - Structure containing XY coordinates, cluster ID
-% lineage and a flag indicating whether a cluster reassignment is unique
-% * *maxLabel* - |Integer| - Max cluster ID assigned in the _current_ tracking
-% iteration
+% * *labelTracked* - |Integer| - Tracked cluster assignments for the
+% current timepoint
+% * *previousTracked* - |Integer| - Corrected tracked cluster assignments
+% for the previous timepoint (Corrected if within the boundary of a cluster
+% in the current timepoint, a previous active cell is found in the previous
+% timepoint. In these cases the previous point may have been culled as an
+% outlier so we've included a process to assign it to the current cluster.)
+% 
 %
-%% Unpack
-% Helper function to unpack structs into arrays.
+%% formatLegacy
+% Reformatting function that assembles cluster data as a struct.
+% "Legacy" formatting was used in an early version of this ARCOS port.
+% Some downstream analytical and plotting functions still rely on this
+% formatting.
 %
 % *Inputs*
 %
-% * *d* - |Struct| - Struct to be unpacked into an array
+% * *labelTracked* - |Integer| -All tracked labels
+% * *labelUntracked* - |Integer| - All untracked labels
+% * *XCoord* - |Integer| - All X coordinates
+% * *YCoord* - |Double| - All Y coordinates
+% * *epsilon* - |Double| - All epsilon values
+% * *minpts* - |Logical| - All minpts values
+% * *maxLabels* - |Double| - The greatest cluster assignment for each
+% timepoint
 %
 % *Outputs*
 %
-% * *xy* - |Array| - Array of X and Y coordinates unpacked from the
-% inputted struct
+% * *clust_by_time* - |Struct| -  Struct with fields
+% "untracked", "tracked", "eps", "minpts" and "newmax".
+% Untracked is a struct with fields "XYCoord" and "id"
+% Tracked is a struct with fields "XYCoord", "id" and "new".
+% See in-line documentation for more details.
 %
 %% Examples
 % See "core_only.mlx" in the Demos folder to use ARCOS Core by itself
@@ -234,19 +273,19 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 				labelTracked(:,time-1) = previousTracked;
 
 				%labelUntracked(delta,time-1) = previousTracked(delta)+max(labelUntracked(:,time-1));
-%{ 
-for plotting spreads in real time              
-                if sum(previousTracked) < 0
-                    clrz = hsv(numel(unique(previousTracked))-1);
-                    clrz = clrz(randperm(size(clrz,1)),:);
-                    clrz = [0.95,0.95,0.95; clrz];
-                    nexttile(1);
-                    gscatter(labelTracked(:,time-1),previousXY(:,2),previousTracked,clrz,".",15);
-                    nexttile(2);
-                    gscatter(previousXY(:,1),previousXY(:,2),previousTracked,clrz,".",15);
-                    pause(0.1)
-                end
-%}
+				%{ 
+				for plotting spreads in real time              
+                				if sum(previousTracked) < 0
+                    				clrz = hsv(numel(unique(previousTracked))-1);
+                    				clrz = clrz(randperm(size(clrz,1)),:);
+                    				clrz = [0.95,0.95,0.95; clrz];
+                    				nexttile(1);
+                    				gscatter(labelTracked(:,time-1),previousXY(:,2),previousTracked,clrz,".",15);
+                    				nexttile(2);
+                    				gscatter(previousXY(:,1),previousXY(:,2),previousTracked,clrz,".",15);
+                    				pause(0.1)
+                				end
+				%}
 		else
             labelTracked(active,time) = labelUntracked(active,time);
 		end
@@ -271,7 +310,6 @@ for plotting spreads in real time
 	optionalOut{6} = formatLegacy(labelTracked,labelUntracked,XCoord,YCoord,epsilon,minpts,maxLabels); % This is clust_by_time
 end
 
-
 function label = clustering(activeXY, epsilon, minpts)
 	%Short-circuit on empty input
 	if isempty(activeXY)
@@ -283,10 +321,8 @@ function label = clustering(activeXY, epsilon, minpts)
 	label(label==-1) = 0; %Change outlier cluster IDs to 0 (unclustered)
 end
 
-
-
 function [labelTracked,previousTracked] = tracking(currentUntracked,previousTracked,currentXY,previousXY,previousActive,epsilon,maxLabel)
-	labelTracked = zeros(size(currentUntracked)); %FIXME - Maybe not initialize, because Untracke labels are not 
+	labelTracked = zeros(size(currentUntracked)); %FIXME - Maybe not initialize, because Untracked labels are not 
 	%	constrained with respect to previous tracked labels.  Could randomly equal previous labels?
 	
 	%Get indices and distances of current points' neighbors in previous frame
