@@ -76,10 +76,6 @@
 % These frames are loaded into an animated gif file and saved to the user's
 % current working directory. 
 %
-%The name of this script it misleading as it does *nothing* to identify
-%apoptosis by itself. Rather, it provides the user with the data they need
-%to identify apoptosis events.
-%
 % *Inputs*
 %
 % * *clust_by_id* - |Struct| - ARCOS output containing clusters organized
