@@ -187,23 +187,8 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 
 				%Rectify labelUntracked for previous if start points
 				%detected
-				%delta = labelTracked(:,time-1) ~= previousTracked;
 				labelTracked(:,time-1) = previousTracked;
 
-				%labelUntracked(delta,time-1) = previousTracked(delta)+max(labelUntracked(:,time-1));
-				%{ 
-				for plotting spreads in real time              
-                				if sum(previousTracked) < 0
-                    				clrz = hsv(numel(unique(previousTracked))-1);
-                    				clrz = clrz(randperm(size(clrz,1)),:);
-                    				clrz = [0.95,0.95,0.95; clrz];
-                    				nexttile(1);
-                    				gscatter(labelTracked(:,time-1),previousXY(:,2),previousTracked,clrz,".",15);
-                    				nexttile(2);
-                    				gscatter(previousXY(:,1),previousXY(:,2),previousTracked,clrz,".",15);
-                    				pause(0.1)
-                				end
-				%}
 		else
             labelTracked(active,time) = labelUntracked(active,time);
 		end
@@ -224,7 +209,6 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 	optionalOut{3} = epsilon;
 	optionalOut{4} = minpts;
 	optionalOut{5} = maxLabels;
-	
 	optionalOut{6} = formatLegacy(labelTracked,labelUntracked,XCoord,YCoord,epsilon,minpts,maxLabels); % This is clust_by_time
 end
 
@@ -309,43 +293,25 @@ end
 
 function clust_by_time = formatLegacy(labelTracked,labelUntracked,XCoord,YCoord,epsilon,minpts,maxLabels)
 	% formatLegacy is a reformatting function to convert arcos_core data to
-	
-	[nCells,nTime] = size(labelUntracked);
-
+	% "clust_by_time". clust_by_time is used in several plotting and
+	% analysis functions.
+	[~,nTime] = size(labelUntracked);
 	% Each row of clust_by_time is a timepoint.
 	% At each timepoint we have untracked and tracked structs, eps,
 	% minpts and a newmax value.
-
 	clust_by_time = struct("untracked",{},"tracked",{},"eps",{},"minpts",{},"newmax",{});
-
-
 	for time = 1:nTime
-		
-		%tTracked = labelTracked(:,time);						%Tracked labels for time
-		%tUntracked = labelUntracked(:,time);					%Untracked labels for time
-		%active = allActive{time};								%Active cells for time;
-		%activeXY = [XCoord(active,time),YCoord(active,time)];	%XYCoords for time
-
-		
 																% Build untracked
 																% Within untracked each row is a cluster
 																% Each cluster has XYCoords and an id
-
-
-		
 		untracked = struct("XYCoord",{},"id",{});
-
-		%mapActiveUntracked = tUntracked ~= 0;					%Mapping of active cells in untracked
-		%activeUntracked = tUntracked(mapActiveUntracked);		%Labels of active cells in untracked
 		uniqueUntracked = unique(labelUntracked(labelUntracked(:,time)~=0,time));				%Unique  untracked labels ~=0
 		for iu = 1:length(uniqueUntracked)						%For every unique untracked label
 			u = uniqueUntracked(iu);							%Current indexed unique label
-			%clusterXY = activeXY(activeUntracked == u,:);		%Coordinates for that label
 			clusterXY = [XCoord(labelUntracked(:,time) == u,time),YCoord(labelUntracked(:,time)==u,time)];
 			untracked(iu).XYCoord = clusterXY;
 			untracked(iu).id = u;
 		end
-
 																% Tracked is similar to untracked with some notable differences
 																% In tracked, the id has 2 elements: the untracked id and the
 																% tracked id
@@ -354,37 +320,23 @@ function clust_by_time = formatLegacy(labelTracked,labelUntracked,XCoord,YCoord,
 																% The first element of id may not be used by any downstream
 																% function and is being considered for deprecation. 
 																% Newmax is also unused and may be deprecated
-
-
 		tracked = struct("XYCoord",{},"id",{},"new",{});
-
-
-		%mapActiveTracked = tTracked ~= 0;
-		%activeTracked = tTracked(mapActiveTracked);
 		uniqueTracked = unique(labelTracked(labelTracked(:,time)~=0,time));
-		
 		for it = 1:length(uniqueTracked)
 			t = uniqueTracked(it);
-			%clusterXY = activeXY(activeTracked == t,:);
 			clusterXY = [XCoord(labelTracked(:,time) == t,time),YCoord(labelTracked(:,time)==t,time)];
 			tracked(it).XYCoord = clusterXY;
 			trackedID = repmat(t,height(clusterXY),1); % Repeat t for the number of cells we have
 			% untracked labels for the current tracked labels
 
 			untrackedID = labelUntracked(labelTracked(:,time)==t,time);
-			%tracked(it).id = [activeUntracked(activeTracked==t),trackedID];
 			tracked(it).id = [untrackedID,trackedID];
 			if (time > 1) && (t < maxLabels(time-1))
 				tracked(it).new = 1;
 			else
 				tracked(it).new = 0;
 			end
-			
 		end
-		
-		
-
-
 		clust_by_time(time).untracked = untracked;
 		clust_by_time(time).tracked = tracked;
 		clust_by_time(time).eps = epsilon(time);
