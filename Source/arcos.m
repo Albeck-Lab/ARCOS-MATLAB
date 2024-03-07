@@ -38,7 +38,7 @@ function [clust_by_time, clust_by_id, binaries,warnings,labels] = arcos(data,xy,
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs');  end
 	for s = 1:2:nin; p.(lower(varargin{s})) = varargin{s+1};   end
-	%% DBSAN Prep
+	%% DBSCAN Prep
     if isnumeric(p.eps); p.eps = {p.eps}; end %assert eps is cell
     if isnumeric(p.minpts); p.minpts = {p.minpts}; end %assert eps is cell
 	%% XY Prep
