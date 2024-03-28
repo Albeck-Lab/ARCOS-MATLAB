@@ -95,6 +95,9 @@ classdef arcos_plot
 			p.pixsize = [1,1];
             p.gif = false; %Flag to output images to gif
             p.bin_real = []; %If using synthetic data + real data, supply real data here and it'll be colored differently
+            p.close = true; % if the figure or gif should be closed when finished
+            p.handle = []; % be allowed to give a figure or axes handle
+            p.markersize = 9; % how big should the dots be
             %%Prep varargin structure
             nin = length(varargin);     %Check for even number of add'l inputs
             if rem(nin,2) ~= 0
@@ -111,16 +114,21 @@ classdef arcos_plot
                 %}
             end
             %%Set up environment
-            mkdir(p.outpath); %Make outpath if it doesn't exist
-            fh = figure(); %Figure handle
-            set(fh,'WindowStyle','Normal') %Set figure window behavior
-            set(fh,'Resize','off') %Lock figure dimensions
+            if ~isempty(p.outpath); mkdir(p.outpath); end %Make outpath if it doesn't exist
+            
+            if ~isempty(p.handle) && isgraphics(p.handle,'figure'); fh = p.handle; 
+            elseif ~isempty(p.handle) && isgraphics(p.handle,'axes'); fh = p.handle; 
+            else; fh = figure(); 
+                set(fh,'WindowStyle','Normal') %Set figure window behavior
+                set(fh,'Resize','off') %Lock figure dimensions
+            end %Figure handle
+            
             warning("Do not close the figure until the process has finished");
 			warning('off','MATLAB:legend:IgnoringExtraEntries');
             %%Loop through XY
             for iwell = 1:numel(xy)
 				well = xy(iwell);
-                mkdir(append(p.outpath,'\XY ',int2str(well))); %Make output directory
+                if ~isempty(p.outpath); mkdir(append(p.outpath,'\XY ',int2str(well))); end %Make output directory
                 pwell_data = clust_by_time{well}; %Processed data for the indexed well
                 cwell_data = clust_by_id{well}; %Cluster-wise data for the indexed well
                 rwell_data = raw_data{well}.data; %Raw data for the indexed well
@@ -140,8 +148,8 @@ classdef arcos_plot
                     XCoord = rXCoord(:,time);
                     YCoord = rYCoord(:,time);
                     %image = plotter(XCoord(:,time), YCoord(:,time), cdata{rw,time},time, p.usebounds, p.bin(:,time),p.bin_real(:,time));
-                    clf %Clear current figure
-                    plot(XCoord,YCoord,'.', 'MarkerEdgeColor','k', 'MarkerSize', 9, 'LineStyle', 'none' ); %plot all cells in frame
+                    if itime > 1; clf; end %Clear current figure
+                    plot(fh, XCoord,YCoord,'.', 'MarkerEdgeColor','k', 'MarkerSize', p.markersize, 'LineStyle', 'none' ); %plot all cells in frame
                     hold on;
                     axis square;
                     if p.usebin %Plot active cells
@@ -149,9 +157,9 @@ classdef arcos_plot
                         hold on;
                         if ~isempty(p.bin_real)
                             bin = logical(bin-p.bin_real);
-                            plot(XCoord(p.bin_real),YCoord(p.bin_real),'o','MarkerEdgeColor','g', 'MarkerSize', 9,'LineStyle','none'); %Real data = green
+                            plot(fh,XCoord(p.bin_real),YCoord(p.bin_real),'o','MarkerEdgeColor','g', 'MarkerSize', p.markersize,'LineStyle','none'); %Real data = green
                         end
-                        plot(XCoord(bin),YCoord(bin),'.','MarkerEdgeColor','g', 'MarkerSize', 9,'LineStyle','none'); %Synthetic data = red
+                        plot(fh,XCoord(bin),YCoord(bin),'.','MarkerEdgeColor','g', 'MarkerSize', p.markersize,'LineStyle','none'); %Synthetic data = red
                         hold on;
                     end
                     xlim([0 inf])
@@ -163,7 +171,7 @@ classdef arcos_plot
                                     hold on
                                     bounds = cwell_data(cluster).data(itime2).bounds;
                                     points = cwell_data(cluster).data(itime2).XYCoord;
-                                    plot(points(bounds,1),points(bounds,2),'b','LineWidth',1.75);
+                                    plot(fh,points(bounds,1),points(bounds,2),'b','LineWidth',1.75);
                                 end
                             end
                         end
@@ -171,7 +179,7 @@ classdef arcos_plot
                     for event = 1:size(cdata,2) %Plot collective events
                         if cdata(event).XYCoord > 0
                             xycoord = cdata(event).XYCoord;
-                            plot(xycoord(:,1),xycoord(:,2), '.','MarkerEdgeColor','r','MarkerSize', 9, 'LineStyle', 'none') %clusters = blue
+                            plot(fh,xycoord(:,1),xycoord(:,2), '.','MarkerEdgeColor','r','MarkerSize', p.markersize, 'LineStyle', 'none') %clusters = blue
                             hold on
                         end
                     end
@@ -185,9 +193,9 @@ classdef arcos_plot
                     set(gca,'ydir','reverse') %Reverse Y axis (image origin is top left)
 					%set(gcf,'paperunits','inches','paperposition',[0 0 5 5])
                     image = gcf;
-                    saveas(image,append(p.outpath,'/','XY ',int2str(well),'/',sprintf('%04d',time), '.png'))
+                    if ~isempty(p.outpath); saveas(image,append(p.outpath,'/','XY ',int2str(well),'/',sprintf('%04d',time), '.png')); end
                 end
-                close gcf
+                if p.close; close(gcf);  end
                 %%Prepare GIF if specified
                 if p.gif == true
                     arcos_plot.gif(p.outpath,'GIF');
