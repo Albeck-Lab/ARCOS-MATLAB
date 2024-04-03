@@ -30,6 +30,8 @@
 % untracked (false) clusters. *Default value: true*
 % * *outpath* - |String|, |Char| - Path to desired output directory.
 % *Default value: pwd (current working directory)*
+% * *pixsize* - |Array| - Pixel size (usually in micrometers) for X and Y
+% pixels. *Default value: [1, 1]*
 % * *gif* - |Boolean|, |Logical| - Flag to create animated gif from the
 % saved plot images. *Default value: false*
 % * *bin_real* - |Boolean|, |Logical| - If using synthetic data from
