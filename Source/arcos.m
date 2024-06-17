@@ -22,6 +22,7 @@
 % * *clust_by_id* - |cell| - Clusters organized by cluster ID
 % * *binaries* - |cell| - Binarization data used to cluster
 % * *warnings* - |cell| - Warnings that can indicate poor clustering
+% * *labels* - |cell| - Cell array with SPREAD is labels for each well
 %% Examples
 % See the Demos folder for a variety of examples
 
@@ -33,7 +34,7 @@ function [clust_by_time, clust_by_id, binaries,warnings,labels] = arcos(data,xy,
 	p.minpts = {[]};
 	p.pixsize = [1 1];
 	p.verbose = true;
-	p.debug = false;
+	p.debug = false; %FIXME Remove unused debug flag
 	%% Prep varargin struct
 	nin = length(varargin);
 	if rem(nin,2) ~= 0; warning('Additional inputs must be provided as option, value pairs');  end

@@ -71,6 +71,7 @@
 % 'my_gif'.
 %
 %% Clusters
+% NOTE: This function will not work without the Albeck Lab Image Analysis software suite. 
 % This script plots all clusters by their cluster ID and overlays cluster
 % data onto microscope images. 
 % It includes a few frames prior to a cluster/spread's start so the user
@@ -306,7 +307,3 @@ classdef arcos_plot
 		end
     end 
 end
-
-
-%tiledlayout - make figure, tell it dimensions of output or put in "flow"
-%to dynamically change. Have to say "nexttile" even for first tile

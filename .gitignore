@@ -5,4 +5,5 @@
 **/*.db
 Thumbs.db
 /Data
+/Internal
 ARCOS-MATLAB.zip

@@ -123,7 +123,7 @@ function [labelTracked,warnings,optionalOut] = arcos_core(XCoord,YCoord,bin,vara
 	p.epsilon = [];
 	p.minpts = [];
 	p.verbose = true;
-	p.debug = false;
+	p.debug = false; %FIXME - Remove unused debug flag
 	p.well = [];
 	p.pixsize = [1 1];
 
